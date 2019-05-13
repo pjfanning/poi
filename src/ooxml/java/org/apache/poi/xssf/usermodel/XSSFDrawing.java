@@ -46,7 +46,7 @@ import org.apache.poi.util.Internal;
 import org.apache.poi.util.POILogFactory;
 import org.apache.poi.util.POILogger;
 import org.apache.poi.util.Units;
-import org.apache.poi.xssf.model.CommentsTable;
+import org.apache.poi.xssf.model.Comments;
 import org.apache.xmlbeans.XmlCursor;
 import org.apache.xmlbeans.XmlException;
 import org.apache.xmlbeans.XmlObject;
@@ -377,7 +377,7 @@ public final class XSSFDrawing extends POIXMLDocumentPart implements Drawing<XSS
         XSSFSheet sheet = getSheet();
 
         // create comments and vmlDrawing parts if they don't exist
-        CommentsTable comments = sheet.getCommentsTable(true);
+        Comments comments = sheet.getCommentsTable(true);
         XSSFVMLDrawing vml = sheet.getVMLDrawing(true);
         com.microsoft.schemas.vml.CTShape vmlShape = vml.newCommentShape();
         if (ca.isSet()) {
@@ -398,7 +398,7 @@ public final class XSSFDrawing extends POIXMLDocumentPart implements Drawing<XSS
             throw new IllegalArgumentException("Multiple cell comments in one cell are not allowed, cell: " + ref);
         }
 
-        return new XSSFComment(comments, comments.newComment(ref), vmlShape);
+        return new XSSFComment(comments, comments.newComment(ref).getCTComment(), vmlShape);
     }
 
     /**

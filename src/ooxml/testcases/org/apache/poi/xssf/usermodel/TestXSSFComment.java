@@ -44,6 +44,7 @@ import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.xssf.XSSFITestDataProvider;
 import org.apache.poi.xssf.XSSFTestDataSamples;
+import org.apache.poi.xssf.model.Comments;
 import org.apache.poi.xssf.model.CommentsTable;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.xmlbeans.XmlObject;
@@ -73,7 +74,7 @@ public final class TestXSSFComment extends BaseTestCellComment  {
         assertEquals(1, sheetComments.getCTComments().getAuthors().sizeOfAuthorArray());
         assertEquals(1, sheetComments.getNumberOfAuthors());
 
-        CTComment ctComment = sheetComments.newComment(CellAddress.A1);
+        CTComment ctComment = sheetComments.newComment(CellAddress.A1).getCTComment();
         CTShape vmlShape = CTShape.Factory.newInstance();
 
         XSSFComment comment = new XSSFComment(sheetComments, ctComment, vmlShape);
@@ -88,7 +89,7 @@ public final class TestXSSFComment extends BaseTestCellComment  {
     public void getSetCol() {
         CommentsTable sheetComments = new CommentsTable();
         XSSFVMLDrawing vml = new XSSFVMLDrawing();
-        CTComment ctComment = sheetComments.newComment(CellAddress.A1);
+        CTComment ctComment = sheetComments.newComment(CellAddress.A1).getCTComment();
         CTShape vmlShape = vml.newCommentShape();
 
         XSSFComment comment = new XSSFComment(sheetComments, ctComment, vmlShape);
@@ -107,7 +108,7 @@ public final class TestXSSFComment extends BaseTestCellComment  {
     public void getSetRow() {
         CommentsTable sheetComments = new CommentsTable();
         XSSFVMLDrawing vml = new XSSFVMLDrawing();
-        CTComment ctComment = sheetComments.newComment(CellAddress.A1);
+        CTComment ctComment = sheetComments.newComment(CellAddress.A1).getCTComment();
         CTShape vmlShape = vml.newCommentShape();
 
         XSSFComment comment = new XSSFComment(sheetComments, ctComment, vmlShape);
@@ -179,7 +180,7 @@ public final class TestXSSFComment extends BaseTestCellComment  {
     @Test
     public void author() {
         CommentsTable sheetComments = new CommentsTable();
-        CTComment ctComment = sheetComments.newComment(CellAddress.A1);
+        CTComment ctComment = sheetComments.newComment(CellAddress.A1).getCTComment();
 
         assertEquals(1, sheetComments.getNumberOfAuthors());
         XSSFComment comment = new XSSFComment(sheetComments, ctComment, null);
@@ -217,7 +218,7 @@ public final class TestXSSFComment extends BaseTestCellComment  {
             XSSFClientAnchor ca = (XSSFClientAnchor) anchor;
 
             // create comments and vmlDrawing parts if they don't exist
-            CommentsTable comments = ((SXSSFWorkbook) wb).getXSSFWorkbook()
+            Comments comments = ((SXSSFWorkbook) wb).getXSSFWorkbook()
                     .getSheetAt(0).getCommentsTable(true);
             XSSFVMLDrawing vml = ((SXSSFWorkbook) wb).getXSSFWorkbook()
                     .getSheetAt(0).getVMLDrawing(true);
@@ -230,7 +231,8 @@ public final class TestXSSFComment extends BaseTestCellComment  {
             }
 
             // create the comment in two different ways and verify that there is no difference
-            XSSFComment shape1 = new XSSFComment(comments, comments.newComment(CellAddress.A1), vmlShape1);
+            XSSFComment shape1 = new XSSFComment(comments,
+                    comments.newComment(CellAddress.A1).getCTComment(), vmlShape1);
             shape1.setColumn(ca.getCol1());
             shape1.setRow(ca.getRow1());
 
@@ -243,7 +245,8 @@ public final class TestXSSFComment extends BaseTestCellComment  {
             }
             
             CellAddress ref = new CellAddress(ca.getRow1(), ca.getCol1());
-            XSSFComment shape2 = new XSSFComment(comments, comments.newComment(ref), vmlShape2);
+            XSSFComment shape2 = new XSSFComment(comments,
+                    comments.newComment(ref).getCTComment(), vmlShape2);
         
             assertEquals(shape1.getAuthor(), shape2.getAuthor());
             assertEquals(shape1.getClientAnchor(), shape2.getClientAnchor());

@@ -18,6 +18,7 @@ package org.apache.poi.xssf.model;
 
 import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.xssf.usermodel.XSSFComment;
+import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTComment;
 
 import java.util.Iterator;
 
@@ -45,6 +46,14 @@ public interface Comments {
     XSSFComment findCellComment(CellAddress cellAddress);
 
     /**
+     * Create a new comment located at cell address
+     *
+     * @param ref the location to add the comment
+     * @return a new CTComment located at ref with default author
+     */
+    XSSFComment newComment(CellAddress ref);
+
+    /**
      * Remove the comment at cellRef location, if one exists
      *
      * @param cellRef the location of the comment to remove
@@ -58,4 +67,12 @@ public interface Comments {
      * @since 4.0.0
      */
     Iterator<CellAddress> getCellAddresses();
+
+    /**
+     * Called after the reference is updated, so that
+     *  we can reflect that in our cache
+     *  @param oldReference the comment to remove from the commentRefs map
+     *  @param comment the comment to replace in the commentRefs map
+     */
+    void referenceUpdated(CellAddress oldReference, CTComment comment);
 }

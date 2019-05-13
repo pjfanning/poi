@@ -25,7 +25,8 @@ import org.apache.poi.ss.usermodel.Comment;
 import org.apache.poi.ss.usermodel.RichTextString;
 import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellReference;
-import org.apache.poi.xssf.model.CommentsTable;
+import org.apache.poi.util.Internal;
+import org.apache.poi.xssf.model.Comments;
 import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTComment;
 import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTRst;
 
@@ -35,7 +36,7 @@ import com.microsoft.schemas.vml.CTShape;
 public class XSSFComment implements Comment {
     
     private final CTComment _comment;
-    private final CommentsTable _comments;
+    private final Comments _comments;
     private final CTShape _vmlShape;
 
     /**
@@ -47,7 +48,7 @@ public class XSSFComment implements Comment {
      * Creates a new XSSFComment, associated with a given
      *  low level comment object.
      */
-    public XSSFComment(CommentsTable comments, CTComment comment, CTShape vmlShape) {
+    public XSSFComment(Comments comments, CTComment comment, CTShape vmlShape) {
         _comment = comment;
         _comments = comments;
         _vmlShape = vmlShape;
@@ -230,11 +231,12 @@ public class XSSFComment implements Comment {
     /**
      * @return the xml bean holding this comment's properties
      */
-    protected CTComment getCTComment(){
+    @Internal
+    public CTComment getCTComment(){
         return _comment;
     }
 
-    protected CTShape getCTShape(){
+    protected CTShape getCTShape() {
         return _vmlShape;
     }
 

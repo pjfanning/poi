@@ -219,9 +219,9 @@ public class TestCommentsTable {
         final CellAddress addrA3 = new CellAddress("A3");
         
         CommentsTable sheetComments = new CommentsTable();
-        CTComment a1 = sheetComments.newComment(addrA1);
-        CTComment a2 = sheetComments.newComment(addrA2);
-        CTComment a3 = sheetComments.newComment(addrA3);
+        CTComment a1 = sheetComments.newComment(addrA1).getCTComment();
+        CTComment a2 = sheetComments.newComment(addrA2).getCTComment();
+        CTComment a3 = sheetComments.newComment(addrA3).getCTComment();
 
         assertSame(a1, sheetComments.getCTComment(addrA1));
         assertSame(a2, sheetComments.getCTComment(addrA2));

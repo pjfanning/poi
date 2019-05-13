@@ -100,6 +100,7 @@ public class CommentsTable extends POIXMLDocumentPart implements Comments {
      *  @param oldReference the comment to remove from the commentRefs map
      *  @param comment the comment to replace in the commentRefs map
      */
+    @Override
     public void referenceUpdated(CellAddress oldReference, CTComment comment) {
        if(commentRefs != null) {
           commentRefs.remove(oldReference);
@@ -206,13 +207,13 @@ public class CommentsTable extends POIXMLDocumentPart implements Comments {
     }
     
     /**
-     * Create a new comment located` at cell address
+     * Create a new comment located at cell address
      *
      * @param ref the location to add the comment
      * @return a new CTComment located at ref with default author
      */
-    @Internal
-    public CTComment newComment(CellAddress ref) {
+    @Override
+    public XSSFComment newComment(CellAddress ref) {
         CTComment ct = comments.getCommentList().addNewComment();
         ct.setRef(ref.formatAsString());
         ct.setAuthorId(DEFAULT_AUTHOR_ID);
@@ -220,7 +221,7 @@ public class CommentsTable extends POIXMLDocumentPart implements Comments {
         if(commentRefs != null) {
            commentRefs.put(ref, ct);
         }
-        return ct;
+        return new XSSFComment(this, ct, null);
     }
 
     /**

@@ -81,7 +81,7 @@ import org.apache.poi.util.POILogFactory;
 import org.apache.poi.util.POILogger;
 import org.apache.poi.util.Removal;
 import org.apache.poi.util.Units;
-import org.apache.poi.xssf.model.CommentsTable;
+import org.apache.poi.xssf.model.Comments;
 import org.apache.poi.xssf.usermodel.XSSFPivotTable.PivotTableReferenceConfigurator;
 import org.apache.poi.xssf.usermodel.helpers.ColumnHelper;
 import org.apache.poi.xssf.usermodel.helpers.XSSFColumnShifter;
@@ -165,7 +165,7 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet  {
     private final SortedMap<Integer, XSSFRow> _rows = new TreeMap<>();
     private List<XSSFHyperlink> hyperlinks;
     private ColumnHelper columnHelper;
-    private CommentsTable sheetComments;
+    private Comments sheetComments;
     /**
      * cache of master shared formulas in this sheet.
      * Master shared formula is the first formula in a group of shared formulas is saved in the f element.
@@ -233,8 +233,8 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet  {
         // Look for bits we're interested in
         for(RelationPart rp : getRelationParts()){
             POIXMLDocumentPart p = rp.getDocumentPart();
-            if(p instanceof CommentsTable) {
-                sheetComments = (CommentsTable)p;
+            if(p instanceof Comments) {
+                sheetComments = (Comments)p;
             }
             if(p instanceof XSSFTable) {
                 tables.put( rp.getRelationship().getId(), (XSSFTable)p );
@@ -827,13 +827,13 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet  {
         final int column = address.getColumn();
 
         CellAddress ref = new CellAddress(row, column);
-        CTComment ctComment = sheetComments.getCTComment(ref);
-        if(ctComment == null) {
+        XSSFComment xssfComment = sheetComments.findCellComment(ref);
+        if(xssfComment == null) {
             return null;
         }
 
         XSSFVMLDrawing vml = getVMLDrawing(false);
-        return new XSSFComment(sheetComments, ctComment,
+        return new XSSFComment(sheetComments, xssfComment.getCTComment(),
                 vml == null ? null : vml.findCommentShape(row, column));
     }
 
@@ -3092,10 +3092,9 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet  {
                 // FIXME: (performance optimization) this should be moved outside the for-loop so that comments only needs to be iterated over once.
                 // also remove any comments associated with this row
                 if(sheetComments != null){
-                    CTCommentList lst = sheetComments.getCTComments().getCommentList();
-                    for (CTComment comment : lst.getCommentArray()) {
-                        String strRef = comment.getRef();
-                        CellAddress ref = new CellAddress(strRef);
+                    Iterator<CellAddress> addresses = sheetComments.getCellAddresses();
+                    while (addresses.hasNext()) {
+                        CellAddress ref = addresses.next();
 
                         // is this comment part of the current row?
                         if(ref.getRow() == rownum) {
@@ -3153,15 +3152,15 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet  {
 
                 // is there a change necessary for the current row?
                 if(newrownum != rownum) {
-                    CTCommentList lst = sheetComments.getCTComments().getCommentList();
-                    for (CTComment comment : lst.getCommentArray()) {
-                        String oldRef = comment.getRef();
-                        CellReference ref = new CellReference(oldRef);
+                    Iterator<CellAddress> addresses = sheetComments.getCellAddresses();
+                    while (addresses.hasNext()) {
+                        CellAddress ref = addresses.next();
 
                         // is this comment part of the current row?
                         if(ref.getRow() == rownum) {
-                            XSSFComment xssfComment = new XSSFComment(sheetComments, comment,
-                                    vml == null ? null : vml.findCommentShape(rownum, ref.getCol()));
+                            XSSFComment oldComment = sheetComments.findCellComment(ref);
+                            XSSFComment xssfComment = new XSSFComment(sheetComments, oldComment.getCTComment(),
+                                    vml == null ? null : vml.findCommentShape(rownum, ref.getColumn()));
 
                             // we should not perform the shifting right here as we would then find
                             // already shifted comments and would shift them again...
@@ -3238,15 +3237,15 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet  {
 
 
         if(sheetComments != null){
-            CTCommentList lst = sheetComments.getCTComments().getCommentList();
-            for (CTComment comment : lst.getCommentArray()) {
-                String oldRef = comment.getRef();
-                CellReference ref = new CellReference(oldRef);
+            Iterator<CellAddress> addresses = sheetComments.getCellAddresses();
+            while (addresses.hasNext()) {
+                CellAddress ref = addresses.next();
 
-                int columnIndex =ref.getCol();
+                int columnIndex = ref.getColumn();
                 int newColumnIndex = shiftedRowNum(startColumnIndex, endColumnIndex, n, columnIndex);
                 if(newColumnIndex != columnIndex){
-                    XSSFComment xssfComment = new XSSFComment(sheetComments, comment,
+                    XSSFComment oldComment = sheetComments.findCellComment(ref);
+                    XSSFComment xssfComment = new XSSFComment(sheetComments, oldComment.getCTComment(),
                             vml == null ? null : vml.findCommentShape(ref.getRow(), columnIndex));
                     commentsToShift.put(xssfComment, newColumnIndex);
                 }
@@ -3486,18 +3485,18 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet  {
      *
      * @param create create a new comments table if it does not exist
      */
-    protected CommentsTable getCommentsTable(boolean create) {
+    protected Comments getCommentsTable(boolean create) {
         if(sheetComments == null && create){
             // Try to create a comments table with the same number as
             //  the sheet has (i.e. sheet 1 -> comments 1)
             try {
-                sheetComments = (CommentsTable)createRelationship(
+                sheetComments = (Comments)createRelationship(
                         XSSFRelation.SHEET_COMMENTS, XSSFFactory.getInstance(), (int)sheet.getSheetId());
             } catch(PartAlreadyExistsException e) {
                 // Technically a sheet doesn't need the same number as
                 //  it's comments, and clearly someone has already pinched
                 //  our number! Go for the next available one instead
-                sheetComments = (CommentsTable)createRelationship(
+                sheetComments = (Comments)createRelationship(
                         XSSFRelation.SHEET_COMMENTS, XSSFFactory.getInstance(), -1);
             }
         }
