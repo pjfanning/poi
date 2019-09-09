@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.poi.ooxml.POIXMLDocumentPart;
-import org.apache.poi.ss.formula.eval.NotImplementedException;
+import org.apache.poi.util.Beta;
 import org.apache.poi.util.Internal;
 import org.apache.poi.wp.usermodel.Paragraph;
 import org.apache.xmlbeans.XmlCursor;
@@ -98,6 +98,52 @@ public class XWPFParagraph implements IBodyElement, IRunBody, ISDTContents, Para
             }
             c.dispose();
         }
+    }
+
+    /**
+     * @param bidi the bidirectional characters flag. false = not bidi, true = is bidi, null = not set
+     */
+    @Beta
+    public void setBidi(Boolean bidi) {
+        CTPPr ctppr = this.paragraph.getPPr();
+        if (bidi == null) {
+            if (ctppr != null) {
+                ctppr.unsetBidi();
+            }
+        } else {
+            if (ctppr == null) ctppr = this.paragraph.addNewPPr();
+            STOnOff.Enum onOff = bidi ? STOnOff.ON : STOnOff.OFF;
+            CTOnOff bidiOnOff = ctppr.getBidi();
+            if (bidiOnOff == null) bidiOnOff = ctppr.addNewBidi();
+            bidiOnOff.setVal(onOff);
+        }
+    }
+
+    /**
+     * @return the bidirectional characters flag. false = not bidi, true = is bidi, null = not set
+     * @since 4.2.0
+     */
+    @Beta
+    public Boolean getBidi() {
+        CTPPr ctppr = this.paragraph.getPPr();
+        if (ctppr == null || ctppr.getBidi() == null || ctppr.getBidi().getVal() == null) {
+            return null;
+        }
+        return ctppr.getBidi().getVal() == STOnOff.ON ? Boolean.TRUE : Boolean.FALSE;
+    }
+
+    /**
+     * @return the language settings
+     * @since 4.2.0
+     */
+    @Beta
+    public XWPFLanguage getLang() {
+        CTPPr ctppr = this.paragraph.getPPr();
+        if (ctppr == null || ctppr.getRPr() == null || ctppr.getRPr().getLang() == null) {
+            return null;
+        }
+        CTLanguage ctl = ctppr.getRPr().getLang();
+        return new XWPFLanguage(ctl);
     }
 
     /**

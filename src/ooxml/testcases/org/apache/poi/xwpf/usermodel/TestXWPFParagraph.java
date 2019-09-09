@@ -26,6 +26,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.apache.poi.xwpf.XWPFTestDataSamples;
 import org.junit.Test;
@@ -98,6 +99,42 @@ public final class TestXWPFParagraph {
 
             assertFalse(ps.get(4).isEmpty());
             assertEquals("More on page one", ps.get(4).getText());
+        }
+    }
+
+    /**
+     * Check that we get the bidi flag from the paragraph
+     */
+    @Test
+    public void testBidi() throws IOException {
+        try (XWPFDocument document = new XWPFDocument()) {
+            XWPFParagraph paragraph = document.createParagraph();
+            assertNull(paragraph.getBidi());
+
+            paragraph.setBidi(null);
+            assertNull(paragraph.getBidi());
+
+            paragraph.setBidi(true);
+            assertTrue(paragraph.getBidi());
+
+            paragraph.setBidi(false);
+            assertFalse(paragraph.getBidi());
+
+            paragraph.setBidi(null);
+            assertNull(paragraph.getBidi());
+        }
+    }
+
+    @Test
+    public void testArabicDocx() throws IOException {
+        try (XWPFDocument document = XWPFTestDataSamples.openSampleDocument("arabic.docx")) {
+            List<XWPFParagraph> paragraphs = document.getParagraphs();
+            assertTrue("doc contains many paragraphs", paragraphs.size() > 10);
+            Stream<XWPFParagraph> bidiParagraphs =
+                    paragraphs.stream().filter(xwpfParagraph ->
+                            (xwpfParagraph.getLang() != null && xwpfParagraph.getLang().getBidi() != null
+                                && xwpfParagraph.getLang().getBidi().toString().startsWith("ar")));
+            assertTrue("doc contains at least one bidi=true paragraph", bidiParagraphs.count() > 10);
         }
     }
 

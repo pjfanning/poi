@@ -116,7 +116,7 @@ public final class POIDataSamples {
         return _instHSMF;
     }
 
-    public static POIDataSamples getXmlDSignInstance(){
+    public static POIDataSamples getXmlDSignInstance() {
         if(_instXmlDSign == null) _instXmlDSign = new POIDataSamples("xmldsign");
         return _instXmlDSign;
     }

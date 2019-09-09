@@ -30,8 +30,7 @@ import javax.xml.stream.events.Namespace;
 
 import org.apache.poi.util.POILogFactory;
 import org.apache.poi.util.POILogger;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
+import org.w3c.dom.*;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
