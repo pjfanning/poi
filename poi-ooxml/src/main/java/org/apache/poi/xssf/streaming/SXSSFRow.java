@@ -17,21 +17,20 @@
 
 package org.apache.poi.xssf.streaming;
 
-import java.util.Iterator;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.NoSuchElementException;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 import org.apache.poi.ss.SpreadsheetVersion;
+import org.apache.poi.ss.formula.FormulaShifter;
 import org.apache.poi.ss.formula.eval.NotImplementedException;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.CellType;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.ss.util.CellUtil;
+import org.apache.poi.util.Beta;
 import org.apache.poi.util.Internal;
 import org.apache.poi.util.NotImplemented;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.helpers.XSSFRowShifter;
 
 /**
  * Streaming version of XSSFRow implementing the "BigGridDemo" strategy.
@@ -557,6 +556,92 @@ public class SXSSFRow implements Row, Comparable<SXSSFRow>
     @Override
     public int hashCode() {
         return _cells.hashCode();
+    }
+
+    /**
+     * Copy the cells from srcRow to this row
+     * If this row is not a blank row, this will merge the two rows, overwriting
+     * the cells in this row with the cells in srcRow
+     * If srcRow is null, overwrite cells in destination row with blank values, styles, etc per cell copy policy
+     * srcRow may be from a different sheet in the same workbook
+     * @param srcRow the rows to copy from
+     * @param policy the policy to determine what gets copied
+     */
+    @Beta
+    public void copyRowFrom(Row srcRow, CellCopyPolicy policy) {
+        copyRowFrom(srcRow, policy, null);
+    }
+    
+    /**
+     * Copy the cells from srcRow to this row
+     * If this row is not a blank row, this will merge the two rows, overwriting
+     * the cells in this row with the cells in srcRow
+     * If srcRow is null, overwrite cells in destination row with blank values, styles, etc per cell copy policy
+     * srcRow may be from a different sheet in the same workbook
+     * @param srcRow the rows to copy from
+     * @param policy the policy to determine what gets copied
+     * @param context the context - see {@link CellCopyContext}
+     */
+    @Beta
+    public void copyRowFrom(Row srcRow, CellCopyPolicy policy, CellCopyContext context) {
+        if (srcRow == null) {
+            // srcRow is blank. Overwrite cells with blank values, blank styles, etc per cell copy policy
+            for (Cell destCell : this) {
+                CellUtil.copyCell(null, destCell, policy, context);
+            }
+
+            if (policy.isCopyMergedRegions()) {
+                // Remove MergedRegions in dest row
+                final int destRowNum = getRowNum();
+                int index = 0;
+                final Set<Integer> indices = new HashSet<>();
+                for (CellRangeAddress destRegion : getSheet().getMergedRegions()) {
+                    if (destRowNum == destRegion.getFirstRow() && destRowNum == destRegion.getLastRow()) {
+                        indices.add(index);
+                    }
+                    index++;
+                }
+                getSheet().removeMergedRegions(indices);
+            }
+
+            if (policy.isCopyRowHeight()) {
+                // clear row height
+                setHeight((short)-1);
+            }
+
+        } else {
+            for (final Cell c : srcRow) {
+                final SXSSFCell destCell = createCell(c.getColumnIndex());
+                CellUtil.copyCell(c, destCell, policy, context);
+            }
+
+            final int sheetIndex = _sheet.getWorkbook().getSheetIndex(_sheet);
+            final String sheetName = _sheet.getWorkbook().getSheetName(sheetIndex);
+            final int srcRowNum = srcRow.getRowNum();
+            final int destRowNum = getRowNum();
+            final int rowDifference = destRowNum - srcRowNum;
+
+//            final FormulaShifter formulaShifter = FormulaShifter.createForRowCopy(sheetIndex, sheetName, srcRowNum, srcRowNum, rowDifference, SpreadsheetVersion.EXCEL2007);
+//            final XSSFRowShifter rowShifter = new XSSFRowShifter(_sheet);
+//            rowShifter.updateRowFormulas(this, formulaShifter);
+
+            // Copy merged regions that are fully contained on the row
+            // FIXME: is this something that rowShifter could be doing?
+            if (policy.isCopyMergedRegions()) {
+                for (CellRangeAddress srcRegion : srcRow.getSheet().getMergedRegions()) {
+                    if (srcRowNum == srcRegion.getFirstRow() && srcRowNum == srcRegion.getLastRow()) {
+                        CellRangeAddress destRegion = srcRegion.copy();
+                        destRegion.setFirstRow(destRowNum);
+                        destRegion.setLastRow(destRowNum);
+                        getSheet().addMergedRegion(destRegion);
+                    }
+                }
+            }
+
+            if (policy.isCopyRowHeight()) {
+                setHeight(srcRow.getHeight());
+            }
+        }
     }
 
     @Override
