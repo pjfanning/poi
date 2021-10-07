@@ -30,7 +30,19 @@ import org.apache.poi.ss.formula.FormulaType;
 import org.apache.poi.ss.formula.SharedFormula;
 import org.apache.poi.ss.formula.eval.ErrorEval;
 import org.apache.poi.ss.formula.ptg.Ptg;
-import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellBase;
+import org.apache.poi.ss.usermodel.CellCopyContext;
+import org.apache.poi.ss.usermodel.CellCopyPolicy;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.Comment;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.FormulaError;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
+import org.apache.poi.ss.usermodel.Hyperlink;
+import org.apache.poi.ss.usermodel.RichTextString;
 import org.apache.poi.ss.usermodel.Row.MissingCellPolicy;
 import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellRangeAddress;
@@ -130,10 +142,9 @@ public final class XSSFCell extends CellBase {
      * @param srcCell The cell to take value, formula and style from
      * @param policy The policy for copying the information, see {@link CellCopyPolicy}
      * @throws IllegalArgumentException if copy cell style and srcCell is from a different workbook
-     * @deprecated use {@link CellUtil#copyCell(Cell, Cell, CellCopyPolicy, CellCopyContext)}
+     * @see CellUtil#copyCell(Cell, Cell, CellCopyPolicy, CellCopyContext)
      */
     @Beta
-    @Deprecated
     public void copyCellFrom(Cell srcCell, CellCopyPolicy policy) {
         CellUtil.copyCell(srcCell, this, policy, null);
     }
@@ -229,17 +240,17 @@ public final class XSSFCell extends CellBase {
                 return 0.0;
             case NUMERIC:
                 if(_cell.isSetV()) {
-                   String v = _cell.getV();
-                   if (v.isEmpty()) {
-                       return 0.0;
-                   }
-                   try {
-                      return Double.parseDouble(v);
-                   } catch(NumberFormatException e) {
-                      throw typeMismatch(CellType.NUMERIC, CellType.STRING, false);
-                   }
+                    String v = _cell.getV();
+                    if (v.isEmpty()) {
+                        return 0.0;
+                    }
+                    try {
+                        return Double.parseDouble(v);
+                    } catch(NumberFormatException e) {
+                        throw typeMismatch(CellType.NUMERIC, CellType.STRING, false);
+                    }
                 } else {
-                   return 0.0;
+                    return 0.0;
                 }
             case FORMULA:
                 throw new AssertionError();
@@ -575,7 +586,7 @@ public final class XSSFCell extends CellBase {
      */
     private boolean isFormulaCell() {
         return (_cell.isSetF() && _cell.getF().getT() != STCellFormulaType.DATA_TABLE)
-            || getSheet().isCellInArrayFormulaContext(this);
+                || getSheet().isCellInArrayFormulaContext(this);
     }
 
     /**
@@ -634,7 +645,7 @@ public final class XSSFCell extends CellBase {
             case STCellType.INT_S: // String is in shared strings
             case STCellType.INT_INLINE_STR: // String is inline in cell
             case STCellType.INT_STR:
-                 return CellType.STRING;
+                return CellType.STRING;
             default:
                 throw new IllegalStateException("Illegal cell type: " + this._cell.getT());
         }
@@ -961,7 +972,7 @@ public final class XSSFCell extends CellBase {
 
     /**
      * Removes the comment for this cell, if there is one.
-    */
+     */
     @Override
     public void removeCellComment() {
         XSSFComment comment = getCellComment();
@@ -1114,7 +1125,7 @@ public final class XSSFCell extends CellBase {
                     return FALSE;
                 }
                 throw new IllegalStateException("Unexpected boolean cached formula value '"
-                    + textValue + "'.");
+                        + textValue + "'.");
 
             case STRING:
                 // fall-through
@@ -1163,4 +1174,3 @@ public final class XSSFCell extends CellBase {
     }
 
 }
-
