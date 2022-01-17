@@ -45,13 +45,13 @@ dependencies {
     api ("org.apache.commons:commons-math4:${commonsMathVersion}") {
       exclude group: 'org.apache.commons', module: 'commons-numbers-complex-streams'
     }
-    api "org.apache.commons:commons-numbers-angle:1.1-SNAPSHOT"
-    api "org.apache.commons:commons-numbers-arrays:1.1-SNAPSHOT"
-    api "org.apache.commons:commons-numbers-complex:1.1-SNAPSHOT"
-    api "org.apache.commons:commons-numbers-field:1.1-SNAPSHOT"
-    api "org.apache.commons:commons-numbers-parent:1.1-SNAPSHOT"
-    api "org.apache.commons:commons-numbers-quaternion:1.1-SNAPSHOT"
-    api "org.apache.commons:commons-geometry-euclidean:1.1-SNAPSHOT"
+    api "org.apache.commons:commons-numbers-angle:1.0"
+    api "org.apache.commons:commons-numbers-arrays:1.0"
+    api "org.apache.commons:commons-numbers-complex:1.0"
+    api "org.apache.commons:commons-numbers-field:1.0"
+    api "org.apache.commons:commons-numbers-parent:1.0"
+    api "org.apache.commons:commons-numbers-quaternion:1.0"
+    api "org.apache.commons:commons-geometry-euclidean:1.0"
     api "commons-io:commons-io:${commonsIoVersion}"
     api 'com.zaxxer:SparseBitSet:1.2'
     api "org.apache.logging.log4j:log4j-api:${log4jVersion}"
