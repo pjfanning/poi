@@ -39,7 +39,9 @@ dependencies {
     api project(':poi')
     api project(path:':poi', configuration: 'archives')
     api "org.apache.logging.log4j:log4j-api:${log4jVersion}"
-    api "org.apache.commons:commons-math3:${commonsMathVersion}"
+    api ("org.apache.commons:commons-math4:${commonsMathVersion}") {
+      exclude group: 'org.apache.commons', module: 'commons-numbers-complex-streams'
+    }
     api "commons-codec:commons-codec:${commonsCodecVersion}"
 
     testImplementation project(path: ':poi', configuration: 'tests')

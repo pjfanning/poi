@@ -17,7 +17,7 @@
 
 package org.apache.poi.ss.formula.functions;
 
-import org.apache.commons.math3.distribution.TDistribution;
+import org.apache.commons.statistics.distribution.TDistribution;
 import org.apache.poi.ss.formula.OperationEvaluationContext;
 import org.apache.poi.ss.formula.eval.*;
 
@@ -53,7 +53,7 @@ public final class TDist extends Fixed3ArgFunction implements FreeRefFunction {
     public static final TDist instance = new TDist();
 
     static double tdistOneTail(double x, int degreesOfFreedom) {
-        TDistribution tdist = new TDistribution(null, degreesOfFreedom);
+        TDistribution tdist = TDistribution.of(degreesOfFreedom);
         return 1.0 - tdist.cumulativeProbability(x);
     }
 
