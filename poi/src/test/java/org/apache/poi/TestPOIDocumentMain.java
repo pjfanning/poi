@@ -42,6 +42,20 @@ import org.junit.jupiter.api.Test;
  */
 final class TestPOIDocumentMain {
     @Test
+    void printFunctions(){
+        java.util.Collection<String> supportedFuncs = org.apache.poi.ss.formula.WorkbookEvaluator.getSupportedFunctionNames();
+        System.out.println("named functions size=" + supportedFuncs.size());
+        java.util.Collection<String> unsupportedFuncs = org.apache.poi.ss.formula.WorkbookEvaluator.getNotSupportedFunctionNames();
+        System.out.println("unimplemented functions size=" + unsupportedFuncs.size());
+        java.util.TreeSet<String> set = new java.util.TreeSet<>(supportedFuncs);
+        set.removeAll(unsupportedFuncs);
+        System.out.println("implemented functions size=" + set.size());
+        set.forEach(func -> {
+            System.out.println(func);
+        });
+    }
+
+    @Test
     void readProperties() throws IOException {
         try (POIDocument xls = openSampleWorkbook("DateFormats.xls")) {
             readPropertiesHelper(xls);
