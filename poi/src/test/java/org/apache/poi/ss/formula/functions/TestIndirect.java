@@ -31,6 +31,7 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.CellValue;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
+import org.apache.poi.ss.util.CellReference;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -199,5 +200,16 @@ final class TestIndirect {
     @Test
     void testInvalidInput() {
         assertEquals(ErrorEval.VALUE_INVALID, Indirect.instance.evaluate(new ValueEval[] {}, null));
+    }
+
+    @Test
+    void testRelativeR1C1() {
+        CellReference cr = new CellReference("C3");
+        assertEquals(new CellReference("A3"), Indirect.getRelativeCellReference(cr, "RC[-2]"));
+        assertEquals(new CellReference("E3"), Indirect.getRelativeCellReference(cr, "RC[2]"));
+        assertEquals(new CellReference("C2"), Indirect.getRelativeCellReference(cr, "R[-1]C"));
+        assertEquals(new CellReference("C4"), Indirect.getRelativeCellReference(cr, "R[1]C"));
+        assertEquals(new CellReference("D4"), Indirect.getRelativeCellReference(cr, "R[1]C[1]"));
+        //assertEquals(new CellReference("A1"), Indirect.getRelativeCellReference(cr, "R1C1"));
     }
 }
