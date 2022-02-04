@@ -218,7 +218,7 @@ public final class OperationEvaluationContext {
 
         SpreadsheetVersion ssVersion = _workbook.getSpreadsheetVersion();
 
-        NameType part1refType = classifyCellReference(refStrPart1, ssVersion);
+        NameType part1refType = isA1Style ? classifyCellReference(refStrPart1, ssVersion) : NameType.CELL;
         switch (part1refType) {
             case BAD_CELL_OR_NAMED_RANGE:
                 return ErrorEval.REF_INVALID;
@@ -250,7 +250,7 @@ public final class OperationEvaluationContext {
             }
             throw new IllegalStateException("Unexpected reference classification of '" + refStrPart1 + "'.");
         }
-        NameType part2refType = classifyCellReference(refStrPart1, ssVersion);
+        NameType part2refType = isA1Style ? classifyCellReference(refStrPart1, ssVersion) : NameType.CELL;
         switch (part2refType) {
             case BAD_CELL_OR_NAMED_RANGE:
                 return ErrorEval.REF_INVALID;

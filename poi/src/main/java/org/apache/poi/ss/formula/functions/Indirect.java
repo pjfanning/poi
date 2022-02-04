@@ -115,7 +115,7 @@ public final class Indirect implements FreeRefFunction {
             refText = text.substring(plingPos + 1);
         }
 
-        if (Table.isStructuredReference.matcher(refText).matches()) {
+        if (isA1style && Table.isStructuredReference.matcher(refText).matches()) {
             // The argument is structured reference
             Area3DPxg areaPtg;
             try {
