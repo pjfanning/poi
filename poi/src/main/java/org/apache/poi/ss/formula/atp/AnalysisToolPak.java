@@ -72,7 +72,7 @@ public final class AnalysisToolPak implements UDFFinder {
         r(m, "AVERAGEIFS", Averageifs.instance);
         r(m, "BAHTTEXT", null);
         r(m, "BESSELI", null);
-        r(m, "BESSELJ", null);
+        r(m, "BESSELJ", BesselJ.instance);
         r(m, "BESSELK", null);
         r(m, "BESSELY", null);
         r(m, "BIN2DEC", Bin2Dec.instance);
@@ -102,8 +102,8 @@ public final class AnalysisToolPak implements UDFFinder {
         r(m, "DEC2OCT", null);
         r(m, "DELTA", Delta.instance);
         r(m, "DISC", null);
-        r(m, "DOLLARDE", null);
-        r(m, "DOLLARFR", null);
+        r(m, "DOLLARDE", DollarDe.instance);
+        r(m, "DOLLARFR", DollarFr.instance);
         r(m, "DURATION", null);
         r(m, "EDATE", EDate.instance);
         r(m, "EFFECT", null);
