@@ -25,6 +25,7 @@ import org.apache.poi.hssf.usermodel.HSSFName;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.formula.OperationEvaluationContext;
 import org.apache.poi.ss.formula.eval.ErrorEval;
 import org.apache.poi.ss.formula.eval.ValueEval;
 import org.apache.poi.ss.usermodel.Cell;
@@ -205,11 +206,11 @@ final class TestIndirect {
     @Test
     void testRelativeR1C1() {
         CellReference cr = new CellReference("C3");
-        assertEquals(new CellReference("A3"), Indirect.getRelativeCellReference(cr, "RC[-2]"));
-        assertEquals(new CellReference("E3"), Indirect.getRelativeCellReference(cr, "RC[2]"));
-        assertEquals(new CellReference("C2"), Indirect.getRelativeCellReference(cr, "R[-1]C"));
-        assertEquals(new CellReference("C4"), Indirect.getRelativeCellReference(cr, "R[1]C"));
-        assertEquals(new CellReference("D4"), Indirect.getRelativeCellReference(cr, "R[1]C[1]"));
-        //assertEquals(new CellReference("A1"), Indirect.getRelativeCellReference(cr, "R1C1"));
+        assertEquals(new CellReference("A3"), OperationEvaluationContext.applyR1C1Reference(cr, "RC[-2]"));
+        assertEquals(new CellReference("E3"), OperationEvaluationContext.applyR1C1Reference(cr, "RC[2]"));
+        assertEquals(new CellReference("C2"), OperationEvaluationContext.applyR1C1Reference(cr, "R[-1]C"));
+        assertEquals(new CellReference("C4"), OperationEvaluationContext.applyR1C1Reference(cr, "R[1]C"));
+        assertEquals(new CellReference("D4"), OperationEvaluationContext.applyR1C1Reference(cr, "R[1]C[1]"));
+        assertEquals(new CellReference("A1"), OperationEvaluationContext.applyR1C1Reference(cr, "R1C1"));
     }
 }

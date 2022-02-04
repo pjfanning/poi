@@ -29,10 +29,6 @@ import org.apache.poi.ss.formula.eval.OperandResolver;
 import org.apache.poi.ss.formula.eval.ValueEval;
 import org.apache.poi.ss.formula.ptg.Area3DPxg;
 import org.apache.poi.ss.usermodel.Table;
-import org.apache.poi.ss.util.CellReference;
-
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Implementation for Excel function INDIRECT<p>
@@ -50,36 +46,6 @@ import java.util.regex.Pattern;
 public final class Indirect implements FreeRefFunction {
 
     public static final FreeRefFunction instance = new Indirect();
-
-    static CellReference getRelativeCellReference(CellReference cellReference, String relativeReference) {
-        Pattern pattern = Pattern.compile("R(\\[-?\\d+\\])?C(\\[-?\\d+\\])?");
-        Matcher matcher = pattern.matcher(relativeReference);
-        if (matcher.matches()) {
-            String g1 = matcher.group(1);
-            String g2 = matcher.group(2);
-            int row = cellReference.getRow();
-            if (g1 != null) {
-                if (g1.startsWith("[") && g1.endsWith("]")) {
-                    String move = g1.substring(1, g1.length() - 1);
-                    row += Integer.parseInt(move);
-                } else {
-                    row = Integer.parseInt(g1);
-                }
-            }
-            int col = cellReference.getCol();
-            if (g2 != null) {
-                if (g2.startsWith("[") && g2.endsWith("]")) {
-                    String move = g2.substring(1, g2.length() - 1);
-                    col += Integer.parseInt(move);
-                } else {
-                    col = Integer.parseInt(g2);
-                }
-            }
-            return new CellReference(row, col);
-        } else {
-            throw new IllegalArgumentException(relativeReference + " is not a relative R1C1 reference");
-        }
-    }
 
     private Indirect() {
         // enforce singleton
