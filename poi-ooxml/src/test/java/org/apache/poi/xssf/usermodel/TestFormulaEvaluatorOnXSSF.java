@@ -170,6 +170,9 @@ public final class TestFormulaEvaluatorOnXSSF {
     @ParameterizedTest
     @MethodSource("data")
     void processFunctionRow(String targetFunctionName, int formulasRowIdx, int expectedValuesRowIdx) {
+        //DOLLAR function returns a string that is locale specific
+        assumeFalse(targetFunctionName.equalsIgnoreCase("DOLLAR"));
+
         Row formulasRow = sheet.getRow(formulasRowIdx);
         Row expectedValuesRow = sheet.getRow(expectedValuesRowIdx);
 
