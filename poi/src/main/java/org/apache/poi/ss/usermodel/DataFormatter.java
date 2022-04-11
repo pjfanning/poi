@@ -950,14 +950,7 @@ public class DataFormatter {
         if (numberFormat == null) {
             return Double.toString(d);
         }
-        String formatted;
-        try {
-            //see https://github.com/apache/poi/pull/321 -- but this sometimes fails as Double.toString
-            //can produce strings that can't be parsed by BigDecimal
-            formatted = numberFormat.format(new BigDecimal(Double.toString(d)));
-        } catch (NumberFormatException nfe) {
-            formatted = numberFormat.format(d);
-        }
+        String formatted = numberFormat.format(new BigDecimal(NumberToTextConverter.toText(d)));
         return formatted.replaceFirst("E(\\d)", "E+$1"); // to match Excel's E-notation
     }
 
