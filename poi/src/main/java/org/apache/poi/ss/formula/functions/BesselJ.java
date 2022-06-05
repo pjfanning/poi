@@ -49,7 +49,7 @@ public final class BesselJ extends Fixed2ArgFunction implements FreeRefFunction 
                 return ErrorEval.NUM_ERROR;
             }
 
-            final double result = org.apache.commons.math3.special.BesselJ.value(order, xval);
+            final double result = org.apache.commons.math4.special.BesselJ.value(order, xval);
 
             return new NumberEval(result);
         } catch (EvaluationException e) {

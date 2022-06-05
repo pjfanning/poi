@@ -17,7 +17,7 @@
 
 package org.apache.poi.ss.formula.functions;
 
-import org.apache.commons.math3.distribution.NormalDistribution;
+import org.apache.commons.statistics.distribution.NormalDistribution;
 import org.apache.poi.ss.formula.OperationEvaluationContext;
 import org.apache.poi.ss.formula.eval.ErrorEval;
 import org.apache.poi.ss.formula.eval.EvaluationException;
@@ -37,7 +37,7 @@ public final class NormInv extends Fixed3ArgFunction implements FreeRefFunction 
     public static final NormInv instance = new NormInv();
 
     static double inverse(double probability, double mean, double stdev) {
-        NormalDistribution normalDistribution = new NormalDistribution(mean, stdev);
+        NormalDistribution normalDistribution = NormalDistribution.of(mean, stdev);
         return normalDistribution.inverseCumulativeProbability(probability);
     }
 
