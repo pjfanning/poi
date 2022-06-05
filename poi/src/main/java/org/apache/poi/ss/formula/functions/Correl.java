@@ -16,7 +16,7 @@
 ==================================================================== */
 package org.apache.poi.ss.formula.functions;
 
-import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
+import org.apache.commons.math4.stat.correlation.PearsonsCorrelation;
 import org.apache.poi.ss.formula.ThreeDEval;
 import org.apache.poi.ss.formula.TwoDEval;
 import org.apache.poi.ss.formula.eval.BlankEval;
