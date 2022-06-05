@@ -296,6 +296,21 @@ public final class TestPOIXMLDocument {
     }
 
     @Test
+    void testLoadPptx() throws IOException {
+        byte[] data;
+        try (InputStream is = POIDataSamples.getSlideShowInstance().openResourceAsStream("table_test.pptx")) {
+            data = IOUtils.toByteArray(is);
+        }
+
+        assertDoesNotThrow(() -> {
+            try (XMLSlideShow ppt = new XMLSlideShow(new ByteArrayInputStream(data))) {
+                assertNotNull(ppt.getSlides().get(0).getShapes());
+            }}
+        );
+    }
+
+
+    @Test
     void testOSGIClassLoading() throws IOException {
         byte[] data;
         try (InputStream is = POIDataSamples.getSlideShowInstance().openResourceAsStream("table_test.pptx")) {
@@ -315,8 +330,8 @@ public final class TestPOIXMLDocument {
         UncaughtHandler uh = new UncaughtHandler();
 
         // check schema type loading and check if we could run in an OOM
-        Thread[] ta = new Thread[30];
-        for (int j=0; j<10; j++) {
+        Thread[] ta = new Thread[4];
+        for (int j=0; j<3; j++) {
             for (int i=0; i<ta.length; i++) {
                 ta[i] = new Thread(run);
                 ta[i].setContextClassLoader(cl.getParent());

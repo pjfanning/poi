@@ -77,8 +77,15 @@ public class TestAllFiles {
         "**/.svn/**",
         "lost+found",
         "**/.git/**",
-        "**/ExternalEntityInText.docx", //the DocType (DTD) declaration causes this to fail
-        "**/right-to-left.xlsx" //the threaded comments in this file cause XSSF clone to fail
+        //the DocType (DTD) declaration causes this to fail
+        "**/ExternalEntityInText.docx",
+
+        // exclude files failing on windows nodes, because of limited JCE policies
+        "document/bug53475-password-is-pass.docx",
+        "poifs/60320-protected.xlsx",
+        "poifs/protected_sha512.xlsx",
+        "poifs/60320-protected.xlsx",
+        "poifs/protected_sha512.xlsx",
     };
 
     // cheap workaround of skipping the few problematic files
@@ -90,6 +97,7 @@ public class TestAllFiles {
         "**/right-to-left.xlsx", //the threaded comments in this file cause XSSF clone to fail
         "document/word2.doc",
         "document/cpansearch.perl.org_src_tobyink_acme-rundoc-0.001_word-lib_hello_world.docm",
+        "document/Fuzzed.doc",
         "hpsf/Test0313rur.adm",
         "spreadsheet/43493.xls",
         "spreadsheet/44958.xls",
@@ -100,7 +108,14 @@ public class TestAllFiles {
         "spreadsheet/testArraysAndTables.xls",
         "spreadsheet/testEXCEL_3.xls",
         "spreadsheet/testEXCEL_4.xls",
-        "poifs/unknown_properties.msg"
+        "poifs/unknown_properties.msg",
+
+        // exclude files failing on windows nodes, because of limited JCE policies
+        "document/bug53475-password-is-pass.docx",
+        "poifs/60320-protected.xlsx",
+        "poifs/protected_sha512.xlsx",
+        "poifs/60320-protected.xlsx",
+        "poifs/protected_sha512.xlsx",
     };
 
     private static final Set<String> EXPECTED_FAILURES = StressTestUtils.unmodifiableHashSet(
@@ -120,10 +135,11 @@ public class TestAllFiles {
 
         final List<Arguments> result = new ArrayList<>(100);
         for (String file : scanner.getIncludedFiles()) {
-			// avoid running on files leftover from previous failed runs
-			if(file.endsWith("-saved.xls") || file.endsWith("TestHPSFWritingFunctionality.doc")) {
-				continue;
-			}
+            // avoid running on files leftover from previous failed runs
+            // or being created by tests run in parallel
+            if(file.endsWith("-saved.xls") || file.endsWith("TestHPSFWritingFunctionality.doc")) {
+                continue;
+            }
 
             for (FileHandlerKnown handler : sm.getHandler(file)) {
                 ExcInfo info1 = sm.getExcInfo(file, testName, handler);
@@ -149,13 +165,20 @@ public class TestAllFiles {
     @ParameterizedTest(name = "Extracting - #{index} {0} {1}")
     @MethodSource("extractFiles")
     void handleExtracting(String file, FileHandlerKnown handler, String password, Class<? extends Throwable> exClass, String exMessage) throws IOException {
-        if (StressTestUtils.excludeFile(file, EXPECTED_FAILURES)) return;
+        String threadName = Thread.currentThread().getName();
+        try {
+            Thread.currentThread().setName("Extracting - " + file + " - " + handler);
+            if (StressTestUtils.excludeFile(file, EXPECTED_FAILURES))
+                return;
 
-        System.out.println("Running extractFiles on "+file);
-        FileHandler fileHandler = handler.getHandler();
-        assertNotNull(fileHandler, "Did not find a handler for file " + file);
-        Executable exec = () -> fileHandler.handleExtracting(new File(ROOT_DIR, file));
-        verify(file, exec, exClass, exMessage, password);
+            System.out.println("Running extractFiles on " + file);
+            FileHandler fileHandler = handler.getHandler();
+            assertNotNull(fileHandler, "Did not find a handler for file " + file);
+            Executable exec = () -> fileHandler.handleExtracting(new File(ROOT_DIR, file));
+            verify(file, exec, exClass, exMessage, password);
+        } finally {
+            Thread.currentThread().setName(threadName);
+        }
     }
 
     public static Stream<Arguments> handleFiles() throws IOException {
@@ -165,12 +188,18 @@ public class TestAllFiles {
     @ParameterizedTest(name = "#{index} {0} {1}")
     @MethodSource("handleFiles")
     void handleFile(String file, FileHandlerKnown handler, String password, Class<? extends Throwable> exClass, String exMessage) throws IOException {
-        System.out.println("Running handleFiles on "+file);
-        FileHandler fileHandler = handler.getHandler();
-        assertNotNull(fileHandler, "Did not find a handler for file " + file);
-        try (InputStream stream = new BufferedInputStream(new FileInputStream(new File(ROOT_DIR, file)), 64 * 1024)) {
-            Executable exec = () -> fileHandler.handleFile(stream, file);
-            verify(file, exec, exClass, exMessage, password);
+        String threadName = Thread.currentThread().getName();
+        try {
+            Thread.currentThread().setName("Handle - " + file + " - " + handler);
+            System.out.println("Running handleFiles on "+file);
+            FileHandler fileHandler = handler.getHandler();
+            assertNotNull(fileHandler, "Did not find a handler for file " + file);
+            try (InputStream stream = new BufferedInputStream(new FileInputStream(new File(ROOT_DIR, file)), 64 * 1024)) {
+                Executable exec = () -> fileHandler.handleFile(stream, file);
+                verify(file, exec, exClass, exMessage, password);
+            }
+        } finally {
+            Thread.currentThread().setName(threadName);
         }
     }
 
@@ -181,11 +210,17 @@ public class TestAllFiles {
     @ParameterizedTest(name = "Additional - #{index} {0} {1}")
     @MethodSource("handleAdditionals")
     void handleAdditional(String file, FileHandlerKnown handler, String password, Class<? extends Throwable> exClass, String exMessage) {
-        System.out.println("Running additionals on "+file);
-        FileHandler fileHandler = handler.getHandler();
-        assertNotNull(fileHandler, "Did not find a handler for file " + file);
-        Executable exec = () -> fileHandler.handleAdditional(new File(ROOT_DIR, file));
-        verify(file, exec, exClass, exMessage, password);
+        String threadName = Thread.currentThread().getName();
+        try {
+            Thread.currentThread().setName("Additional - " + file + " - " + handler);
+            System.out.println("Running additionals on "+file);
+            FileHandler fileHandler = handler.getHandler();
+            assertNotNull(fileHandler, "Did not find a handler for file " + file);
+            Executable exec = () -> fileHandler.handleAdditional(new File(ROOT_DIR, file));
+            verify(file, exec, exClass, exMessage, password);
+        } finally {
+            Thread.currentThread().setName(threadName);
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -196,12 +231,12 @@ public class TestAllFiles {
         if (exClass != null && AssertionFailedError.class.isAssignableFrom(exClass)) {
             try {
                 exec.execute();
-                fail(errPrefix + "Expected failed assertion");
+                fail(errPrefix + "Expected failed assertion " + exClass + " and message " + exMessage);
             } catch (AssertionFailedError e) {
                 String actMsg = pathReplace(e.getMessage());
                 assertEquals(exMessage, actMsg, errPrefix);
             } catch (Throwable e) {
-                fail(errPrefix + "Unexpected exception", e);
+                fail(errPrefix + "Unexpected exception, expected " + exClass + " and message " + exMessage, e);
             }
         } else if (exClass != null) {
             Exception e = assertThrows((Class<? extends Exception>)exClass, exec);
@@ -212,7 +247,8 @@ public class TestAllFiles {
                 }
             } else {
                 assertNotNull(actMsg, errPrefix);
-                assertTrue(actMsg.contains(exMessage), errPrefix + "Message: "+actMsg+" - didn't contain: "+exMessage);
+                assertTrue(actMsg.contains(exMessage),
+                        errPrefix + "Message: " + actMsg + " - didn't contain: " + exMessage);
             }
         } else {
             assertDoesNotThrow(exec, errPrefix);

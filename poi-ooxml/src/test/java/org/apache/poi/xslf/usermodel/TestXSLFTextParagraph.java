@@ -146,7 +146,50 @@ class TestXSLFTextParagraph {
         assertEquals(expectedWidth, dtp.getWrappingWidth(false, null), 0);
 
         ppt.close();
-     }
+    }
+
+    @Test
+    void testRemoveTextParagraph() throws IOException {
+        try (XMLSlideShow ppt = new XMLSlideShow()) {
+            XSLFSlide slide = ppt.createSlide();
+            XSLFTextShape sh = slide.createAutoShape();
+            sh.setLineColor(Color.black);
+
+            XSLFTextParagraph p = sh.addNewTextParagraph();
+            p.addNewTextRun().setText(
+                    "Paragraph formatting allows for more granular control " +
+                            "of text within a shape. Properties here apply to all text " +
+                            "residing within the corresponding paragraph.");
+
+            assertTrue(sh.removeTextParagraph(p));
+
+            assertTrue(sh.getTextParagraphs().isEmpty());
+
+            assertEquals(0, sh.getTextBody(true).sizeOfPArray());
+        }
+    }
+
+    @Test
+    void testRemoveTextRun() throws IOException {
+        try (XMLSlideShow ppt = new XMLSlideShow()) {
+            XSLFSlide slide = ppt.createSlide();
+            XSLFTextShape sh = slide.createAutoShape();
+            sh.setLineColor(Color.black);
+
+            XSLFTextParagraph p = sh.addNewTextParagraph();
+            XSLFTextRun run = p.addNewTextRun();
+            run.setText(
+                    "Paragraph formatting allows for more granular control " +
+                            "of text within a shape. Properties here apply to all text " +
+                            "residing within the corresponding paragraph.");
+
+            assertTrue(p.removeTextRun(run));
+
+            assertTrue(p.getTextRuns().isEmpty());
+
+            assertEquals(0, p.getXmlObject().sizeOfRArray());
+        }
+    }
 
     /**
      * test breaking test into lines.

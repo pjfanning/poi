@@ -29,7 +29,7 @@ configurations {
 
 sourceSets {
     test {
-        if (JavaVersion.current() != JavaVersion.VERSION_1_8) {
+        if (jdkVersion > 8) {
             output.dir(TEST9_OUT, builtBy: 'cacheTest9')
         }
         if (IBMVM) {
@@ -43,7 +43,7 @@ sourceSets {
 dependencies {
     testImplementation 'org.apache.ant:ant:1.10.12'
     testImplementation 'org.apache.commons:commons-collections4:4.4'
-    testImplementation 'com.google.guava:guava:31.0.1-jre'
+    testImplementation 'com.google.guava:guava:31.1-jre'
 
     misc(project(':poi-ooxml')) {
         capabilities {
@@ -78,6 +78,7 @@ dependencies {
     }
     testImplementation project(path: ':poi-ooxml-lite-agent', configuration: 'archives')
     testImplementation "org.apache.logging.log4j:log4j-slf4j18-impl:${log4jVersion}"
+    testImplementation 'org.slf4j:slf4j-simple:1.7.36'
     testRuntimeOnly "org.apiguardian:apiguardian-api:${apiGuardianVersion}"
 
     if (SAXON_TEST) {
@@ -92,20 +93,23 @@ final List MODULE_COMPILE_PATH = (sourceSets.test.compileClasspath + configurati
 final List MODULE_RUNTIME_PATH = (sourceSets.test.runtimeClasspath + configurations.misc.files).findAll{ it.path =~ MODULE_REGEX && !(it.path =~ MODULE_NOT_REGEX) }.collect{ it.parent }.unique()
 
 final String OOXML_LITE_AGENT = "../build/dist/maven/poi-ooxml-lite-agent/poi-ooxml-lite-agent-${project.version}.jar"
-final String OOXML_LITE_REPORT = '../build/ooxml-lite-report'
-final String OOXML_LITE_JAR = "../build/dist/maven/poi-ooxml-lite/poi-ooxml-lite-${project.version}.jar"
+final String OOXML_LITE_REPORT = '../src/resources/ooxml-lite-report'
 final String OOXML_LITE_INCLUDES = "^(com/microsoft/schemas|org/(etsi|openxmlformats|w3/)|org/apache/poi/schemas)"
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(jdkVersion))
+        if (jdkVendor != '') vendor.set(JvmVendorSpec.matching(jdkVendor))
+    }
 }
 
 task compileTest9(type: JavaCompile) {
     dependsOn 'compileTestJava', ':poi-ooxml:testJar', ':poi-scratchpad:testJar', ':poi-examples:jar'
 
-    sourceCompatibility = 9
-    targetCompatibility = 9
+    javaCompiler = javaToolchains.compilerFor {
+        languageVersion = JavaLanguageVersion.of(jdkVersion)
+        if (jdkVendor != '') vendor = JvmVendorSpec.matching(jdkVendor)
+    }
     destinationDirectory = file(TEST9_OUT + VERSIONS9)
     source = file(TEST9_SRC)
     options.compilerArgs = [
@@ -113,6 +117,10 @@ task compileTest9(type: JavaCompile) {
         '--module-path', files(MODULE_COMPILE_PATH).asPath
     ]
     classpath = files()
+
+    onlyIf {
+        jdkVersion > 8
+    }
 }
 
 
@@ -140,7 +148,7 @@ task testJar(type: Jar, dependsOn: [ testClasses, cacheTest9 ] ) {
     // ignore second module-info.class from main
     duplicatesStrategy = 'exclude'
 
-    if (JavaVersion.current() == JavaVersion.VERSION_1_8) {
+    if (jdkVersion == 8) {
         into('META-INF/versions/9') {
             from TEST9_SRC include '*.class'
         }
@@ -169,7 +177,7 @@ test {
         jvmArgs += [
             "-javaagent:${OOXML_LITE_AGENT}=${OOXML_LITE_REPORT}|${OOXML_LITE_INCLUDES}",
         ]
-        if (JavaVersion.current() != JavaVersion.VERSION_1_8) {
+        if (jdkVersion > 8) {
             jvmArgs += [
                 '--add-modules', MODULE_NAME,
                 '--module-path', '../build/dist/maven/poi-integration-tests' + File.pathSeparator + files(MODULE_RUNTIME_PATH).asPath,

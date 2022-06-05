@@ -631,4 +631,16 @@ public interface Workbook extends Closeable, Iterable<Sheet> {
      * @return an evaluation workbook
      */
     EvaluationWorkbook createEvaluationWorkbook();
+
+    /**
+     * @return the type of cell references used
+     * @since POI 5.2.1
+     */
+    CellReferenceType getCellReferenceType();
+
+    /**
+     * @param cellReferenceType the type of cell references used
+     * @since POI 5.2.1
+     */
+    void setCellReferenceType(CellReferenceType cellReferenceType);
 }

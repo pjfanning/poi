@@ -30,20 +30,48 @@ buildscript {
 
     dependencies {
         classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:3.3'
-        classpath 'de.thetaphi:forbiddenapis:3.2'
+        classpath 'de.thetaphi:forbiddenapis:3.3'
     }
 }
 
 plugins {
     id 'base'
     id "com.dorongold.task-tree" version "2.1.0"
-    id('org.nosphere.apache.rat') version '0.7.0'
+    id('org.nosphere.apache.rat') version '0.7.1'
     id 'distribution'
-    id "com.github.spotbugs" version "4.8.0"
+    id "com.github.spotbugs" version "5.0.7"
+    id 'com.github.jk1.dependency-license-report' version '2.0'
 }
 
 repositories {
     mavenCentral()
+    maven { url 'https://repository.apache.org/content/repositories/staging' }
+}
+
+import com.github.jk1.license.render.*
+import com.github.jk1.license.importer.*
+
+licenseReport {
+
+    // Select projects to examine for dependencies.
+    // Defaults to current project and all its subprojects
+    projects = [project] + project.subprojects
+
+    // Adjust the configurations to fetch dependencies, e.g. for Android projects. Default is 'runtimeClasspath'
+    configurations = ['runtimeClasspath']
+    // Use 'ALL' to dynamically resolve all configurations:
+    // configurations = ALL
+
+    // Don't include artifacts of project's own group into the report
+    excludeOwnGroup = true
+
+    // Don't exclude bom dependencies.
+    // If set to true, then all boms will be excluded from the report
+    excludeBoms = false
+
+    // Set custom report renderer, implementing ReportRenderer.
+    // Yes, you can write your own to support any format necessary.
+    renderers = [new XmlReportRenderer('third-party-libs.xml', 'Back-End Libraries')]
 }
 
 // Only add the plugin for Sonar if enabled
@@ -76,8 +104,7 @@ ant.taskdef(name: "junit",
 
 
 wrapper {
-    // https://stackoverflow.com/a/54741656/2066598
-    gradleVersion = '7.3.3'
+    gradleVersion = '7.4'
 }
 
 task adjustWrapperPropertiesFile {
@@ -111,7 +138,7 @@ subprojects {
     apply plugin: 'de.thetaphi.forbiddenapis'
     apply plugin: 'com.github.spotbugs'
 
-    version = '5.2.1-SNAPSHOT'
+    version = '5.2.3-SNAPSHOT'
     ext {
         bouncyCastleVersion = '1.70'
         commonsCodecVersion = '1.15'
@@ -119,15 +146,19 @@ subprojects {
         commonsIoVersion = '2.11.0'
         commonsMathVersion = '4.0-SNAPSHOT'
         junitVersion = '5.8.2'
-        log4jVersion = '2.17.1'
-        mockitoVersion = '4.2.0'
+        log4jVersion = '2.17.2'
+        mockitoVersion = '4.6.1'
         hamcrestVersion = '2.2'
-        xmlbeansVersion = '5.0.3'
+        xmlbeansVersion = '5.1.0'
         batikVersion = '1.14'
-        graphics2dVersion = '0.34'
-        pdfboxVersion = '2.0.25'
-        saxonVersion = '10.6'
+        graphics2dVersion = '0.38'
+        pdfboxVersion = '2.0.26'
+        saxonVersion = '11.3'
         apiGuardianVersion = '1.1.2'
+
+        jdkVersion = (project.properties['jdkVersion'] ?: '8') as int
+        // see https://github.com/gradle/gradle/blob/master/subprojects/jvm-services/src/main/java/org/gradle/internal/jvm/inspection/JvmVendor.java
+        jdkVendor = (project.properties['jdkVendor'] ?: '') as String
 
         JAVA9_SRC = 'src/main/java9'
         JAVA9_OUT = "${buildDir}/classes/java9/main/"
@@ -143,7 +174,7 @@ subprojects {
         all {
             resolutionStrategy {
                 force "commons-io:commons-io:${commonsIoVersion}"
-                force 'org.slf4j:slf4j-api:1.7.33'
+                force 'org.slf4j:slf4j-api:1.7.36'
                 force 'com.fasterxml.woodstox:woodstox-core:6.2.8'
             }
         }
@@ -156,20 +187,17 @@ subprojects {
         options.incremental = true
 
         onlyIf {
-            (name != "compileJava9" && name != "compileTest9") || JavaVersion.current() != JavaVersion.VERSION_1_8
+            (name != "compileJava9" && name != "compileTest9") // || jdkVersion > 8
         }
     }
-
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
 
     repositories {
         mavenCentral()
         maven {
-            url 'https://repository.apache.org/content/repositories/releases'
+            url 'https://repository.apache.org/content/repositories/snapshots'
         }
         maven {
-            url 'https://repository.apache.org/content/repositories/snapshots'
+            url 'https://repository.apache.org/content/repositories/staging'
         }
     }
 
@@ -181,11 +209,14 @@ subprojects {
     }
 
     task wrapper(type: Wrapper){
-        // https://stackoverflow.com/a/65701523/2066598
-        gradleVersion = '7.3.3'
+        gradleVersion = '7.4'
     }
 
     java {
+        toolchain {
+            languageVersion.set(JavaLanguageVersion.of(jdkVersion))
+            if (jdkVendor != '') vendor.set(JvmVendorSpec.matching(jdkVendor))
+        }
         withJavadocJar()
         withSourcesJar()
     }
@@ -193,11 +224,13 @@ subprojects {
     javadoc {
         failOnError = true
         maxMemory = "1024M"
+        javadocTool = javaToolchains.javadocToolFor {
+            languageVersion = JavaLanguageVersion.of(Math.max(11,jdkVersion))
+        }
+
         doFirst {
             options {
-                if (JavaVersion.current().isJava9Compatible()) {
-                    addBooleanOption('html5', true)
-                }
+                addBooleanOption('html5', true)
                 addBooleanOption('Xdoclint:all,-missing', true)
                 links 'https://poi.apache.org/apidocs/dev/'
                 links 'https://docs.oracle.com/javase/8/docs/api/'
@@ -206,6 +239,14 @@ subprojects {
                 splitIndex = true
                 source = "1.8"
             }
+        }
+
+
+        // helper-target to get a directory with all third-party libraries
+        // this is used for mass-regression-testing
+        task getDeps(type: Copy) {
+            from sourceSets.main.runtimeClasspath
+            into 'build/runtime/'
         }
     }
 
@@ -256,6 +297,11 @@ subprojects {
         useJUnitPlatform()
         reports {
             junitXml.required = true
+        }
+
+        javaLauncher = javaToolchains.launcherFor {
+            languageVersion.set(JavaLanguageVersion.of(jdkVersion))
+            if (jdkVendor != '') vendor.set(JvmVendorSpec.matching(jdkVendor))
         }
 
         // Exclude some tests that are not actually tests or do not run cleanly on purpose
@@ -329,14 +375,12 @@ subprojects {
         systemProperties['java.locale.providers'] = 'JRE,CLDR'
 
         doFirst {
-            if (JavaVersion.current() != JavaVersion.VERSION_1_8) {
+            if (jdkVersion > 8) {
                 // some options were removed in JDK 18
-                if (JavaVersion.current().ordinal() < JavaVersion.VERSION_18.ordinal()) {
+                if (jdkVersion < 18) {
                     jvmArgs += [
                         '--illegal-access=warn',
                     ]
-                } else {
-                    System.out.println("Configuring for JDK 18 or higher")
                 }
 
                 jvmArgs += [
@@ -364,7 +408,7 @@ subprojects {
     }
 
     jacoco {
-        toolVersion = '0.8.7'
+        toolVersion = '0.8.8'
     }
 
     jacocoTestReport {
@@ -408,7 +452,7 @@ subprojects {
         ignoreFailures = false
         suppressAnnotations = [ 'org.apache.poi.util.SuppressForbidden' ]
         // forbiddenapis bundled signatures max supported version is 14
-        targetCompatibility = (JavaVersion.VERSION_14.isCompatibleWith(JavaVersion.current()) ? JavaVersion.current() : JavaVersion.VERSION_14)
+        // targetCompatibility = (JavaVersion.VERSION_14.isCompatibleWith(JavaVersion.current()) ? JavaVersion.current() : JavaVersion.VERSION_14)
     }
 
     forbiddenApisMain {
@@ -607,6 +651,7 @@ rat {
         "poi-ooxml-full/src/main/xmlschema/org/apache/poi/schemas/xmldsig-core-schema.xsd",
         "poi-ooxml-full/src/main/xmlschema/org/apache/poi/xdgf/visio.xsd",
         "osgi/README.md",
+        "src/resources/ooxml-lite-report.*",
         // ignore svn conflict artifacts
         "**/module-info.*"
     ]
@@ -638,9 +683,8 @@ task replaceVersion() {
 
     var version = subprojects[0].version
     var tokens = [
-//        [ 'sonar', '**/pom.xml', '(packaging>\\n\\s*<version>)[0-9.]+(?:-SNAPSHOT)?', "\\1${version}" ],
-//        [ 'sonar', '**/pom.xml', '(poi-parent&lt;/artifactId>\\n\\s*<version>)[0-9.]+(?:-SNAPSHOT)?', "\1${version}" ],
-        [ 'osgi', 'pom.xml', '(packaging>\\n\\s*<version>)[0-9.]+(?:-SNAPSHOT|-RC\\d+)?', "\\1${version}" ]
+        [ 'osgi', 'pom.xml', '(packaging>\\n\\s*<version>)[0-9.]+(?:-SNAPSHOT|-RC\\d+)?', "\\1${version}" ],
+        [ 'osgi', 'pom.xml', '(<poi.version>)[0-9.]+(?:-SNAPSHOT|-RC\\d+)?', "\\1${version}" ]
         // [ '.', 'build.gradle', ' version = \'[0-9.]+(?:-SNAPSHOT)?\'', " version = '${version}'" ]
     ]
 
@@ -753,6 +797,9 @@ distributions {
                 exclude '*.docx'
                 exclude '*.pptx'
                 exclude '*.xlsx'
+
+                // exclude intermediate files
+                exclude '**/*-saved.xls'
             }
             from('legal') { exclude 'HEADER' }
         }

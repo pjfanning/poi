@@ -35,6 +35,7 @@ import org.apache.poi.poifs.filesystem.NotOLE2FileException;
 import org.apache.poi.poifs.filesystem.OfficeXmlFileException;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.apache.poi.poifs.property.PropertyTable;
+import org.apache.poi.util.SuppressForbidden;
 import org.apache.poi.util.TempFile;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -42,6 +43,7 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+@SuppressForbidden("tests java.security features deprecated in java 17 - no other option though")
 public class TestPOIFSDump {
 
     private static PrintStream SYSTEM;
@@ -150,25 +152,28 @@ public class TestPOIFSDump {
         }
     }
 
+    @SuppressForbidden("tests java.security features deprecated in java 17 - no other option though")
+    private static class TestOverrideSecurityManager extends SecurityManager {
+        @Override
+        public void checkExit(int status) {
+            throw new SecurityException();
+        }
+
+        @Override
+        public void checkPermission(Permission perm) {
+            // Allow other activities by default
+        }
+    }
+
     @Test
+    @SuppressForbidden("tests java.security features deprecated in java 17 - no other option though")
     void testMainNoArgs() {
         Assumptions.assumeFalse(System.getProperty("java.version").startsWith("18"),
                 "SecurityManager does not work any more since JDK 18");
 
         SecurityManager sm = System.getSecurityManager();
         try {
-            System.setSecurityManager(new SecurityManager() {
-                @Override
-                public void checkExit(int status) {
-                    throw new SecurityException();
-                }
-
-                @Override
-                public void checkPermission(Permission perm) {
-                    // Allow other activities by default
-                }
-            });
-
+            System.setSecurityManager(new TestOverrideSecurityManager());
             assertThrows(SecurityException.class, () -> POIFSDump.main(new String[]{}));
         } finally {
             System.setSecurityManager(sm);

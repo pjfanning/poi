@@ -106,12 +106,15 @@ public class FractionFormat extends Format {
 
     @SuppressWarnings("squid:S2111")
     public String format(Number num) {
+        final double d = num.doubleValue();
+        return format(new BigDecimal(d));
+    }
 
-        final BigDecimal doubleValue = new BigDecimal(num.doubleValue());
+    @SuppressWarnings("squid:S2111")
+    private String format(final BigDecimal decimal) {
+        final boolean isNeg = decimal.compareTo(BigDecimal.ZERO) < 0;
 
-        final boolean isNeg = doubleValue.compareTo(BigDecimal.ZERO) < 0;
-
-        final BigDecimal absValue = doubleValue.abs();
+        final BigDecimal absValue = decimal.abs();
         final BigDecimal wholePart = new BigDecimal(absValue.toBigInteger());
         final BigDecimal decPart = absValue.remainder(BigDecimal.ONE);
 
@@ -148,7 +151,7 @@ public class FractionFormat extends Format {
             }
         } catch (RuntimeException e){
             LOGGER.atWarn().withThrowable(e).log("Can't format fraction");
-            return Double.toString(doubleValue.doubleValue());
+            return Double.toString(decimal.doubleValue());
         }
 
         StringBuilder sb = new StringBuilder();
@@ -162,7 +165,7 @@ public class FractionFormat extends Format {
         if (wholePartFormatString == null || wholePartFormatString.isEmpty()){
             final int fden = fract.getDenominator();
             final int fnum = fract.getNumerator();
-            BigDecimal trueNum = wholePart.multiply(new BigDecimal(fden)).add(new BigDecimal(fnum));
+            BigDecimal trueNum = wholePart.multiply(BigDecimal.valueOf(fden)).add(BigDecimal.valueOf(fnum));
             sb.append(trueNum.toBigInteger()).append("/").append(fden);
             return sb.toString();
         }
@@ -184,10 +187,12 @@ public class FractionFormat extends Format {
         return sb.toString();
     }
 
+    @Override
     public StringBuffer format(Object obj, StringBuffer toAppendTo, FieldPosition pos) {
         return toAppendTo.append(format((Number)obj));
     }
 
+    @Override
     public Object parseObject(String source, ParsePosition pos) {
         throw new NotImplementedException("Reverse parsing not supported");
     }

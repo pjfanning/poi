@@ -128,7 +128,7 @@ public class XMLSlideShow extends POIXMLDocument
 
     /**
      * @param is InputStream
-     * @throws IOException
+     * @throws IOException If reading data from the stream fails
      * @throws POIXMLException a RuntimeException that can be caused by invalid OOXML data
      * @throws RuntimeException a number of other runtime exceptions can be thrown, especially if there are problems with the
      * input format
@@ -248,7 +248,6 @@ public class XMLSlideShow extends POIXMLDocument
         CTSlideIdList slideList = _presentation.isSetSldIdLst()
             ? _presentation.getSldIdLst() : _presentation.addNewSldIdLst();
 
-        @SuppressWarnings("deprecation")
         OptionalLong maxId = Stream.of(slideList.getSldIdArray())
             .mapToLong(CTSlideIdListEntry::getId).max();
 
@@ -454,7 +453,6 @@ public class XMLSlideShow extends POIXMLDocument
 
         // fix ordering in the low-level xml
         CTSlideIdList sldIdLst = _presentation.getSldIdLst();
-        @SuppressWarnings("deprecation")
         CTSlideIdListEntry[] entries = sldIdLst.getSldIdArray();
         CTSlideIdListEntry oldEntry = entries[oldIndex];
         if (oldIndex < newIndex) {
@@ -556,7 +554,7 @@ public class XMLSlideShow extends POIXMLDocument
      */
     @Override
     public XSLFPictureData addPicture(InputStream is, PictureType format) throws IOException {
-        return addPicture(IOUtils.toByteArray(is), format);
+        return addPicture(IOUtils.toByteArrayWithMaxLength(is, XSLFPictureData.getMaxImageSize()), format);
     }
 
 

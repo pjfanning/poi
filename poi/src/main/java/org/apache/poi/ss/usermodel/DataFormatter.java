@@ -51,7 +51,7 @@ import org.apache.poi.util.LocaleUtil;
 
 
 /**
- * DataFormatter contains methods for formatting the value stored in an
+ * DataFormatter contains methods for formatting the value stored in a
  * Cell. This can be useful for reports and GUI presentations when you
  * need to display data exactly as it appears in Excel. Supported formats
  * include currency, SSN, percentages, decimals, dates, phone numbers, zip
@@ -139,7 +139,7 @@ public class DataFormatter {
     private static final Pattern localePatternGroup = Pattern.compile("(\\[\\$[^-\\]]*-[0-9A-Z]+])");
 
     /**
-     * A regex to match the colour formattings rules.
+     * A regex to match the colour formatting's rules.
      * Allowed colours are: Black, Blue, Cyan, Green,
      *  Magenta, Red, White, Yellow, "Color n" (1<=n<=56)
      */
@@ -948,9 +948,15 @@ public class DataFormatter {
         Format numberFormat = getFormat(cell, cfEvaluator);
         double d = cell.getNumericCellValue();
         if (numberFormat == null) {
-            return String.valueOf(d);
+            return Double.toString(d);
         }
-        String formatted = numberFormat.format(d);
+        String formatted;
+        try {
+            //see https://github.com/apache/poi/pull/321 -- but this sometimes fails, thus the catch and retry
+            formatted = numberFormat.format(BigDecimal.valueOf(d));
+        } catch (NumberFormatException nfe) {
+            formatted = numberFormat.format(d);
+        }
         return formatted.replaceFirst("E(\\d)", "E+$1"); // to match Excel's E-notation
     }
 

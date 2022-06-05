@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +37,7 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.CellValue;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.util.LocaleUtil;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -152,6 +154,9 @@ public final class TestFormulasFromSpreadsheet {
     @ParameterizedTest
     @MethodSource("data")
     void processFunctionRow(String targetFunctionName, int formulasRowIdx, int expectedValuesRowIdx) {
+        //DOLLAR function returns a string that is locale specific
+        assumeFalse(targetFunctionName.equalsIgnoreCase("DOLLAR"));
+
         Row formulasRow = sheet.getRow(formulasRowIdx);
         Row expectedValuesRow = sheet.getRow(expectedValuesRowIdx);
 
@@ -167,13 +172,16 @@ public final class TestFormulasFromSpreadsheet {
            CellValue actValue = evaluator.evaluate(c);
            Cell expValue = (expectedValuesRow == null) ? null : expectedValuesRow.getCell(colnum);
 
-           String msg = String.format(Locale.ROOT, "Function '%s': Formula: %s @ %d:%d"
-                   , targetFunctionName, c.getCellFormula(), formulasRow.getRowNum(), colnum);
+           String msg = String.format(Locale.ROOT, "Function '%s': Formula: %s @ %d:%d (%s)"
+                   , targetFunctionName, c.getCellFormula(), formulasRow.getRowNum(), colnum,
+                   new CellReference(formulasRow.getRowNum(), colnum).formatAsString());
 
            assertNotNull(expValue, msg + " - Bad setup data expected value is null");
            assertNotNull(actValue, msg + " - actual value was null");
 
            final CellType cellType = expValue.getCellType();
+           msg += ", cellType: " + cellType + ", actCellType: " + actValue.getCellType() + ": " + actValue.formatAsString();
+
            switch (cellType) {
                case BLANK:
                    assertEquals(CellType.BLANK, actValue.getCellType(), msg);
@@ -190,7 +198,9 @@ public final class TestFormulasFromSpreadsheet {
                    fail("Cannot expect formula as result of formula evaluation: " + msg);
                case NUMERIC:
                    assertEquals(CellType.NUMERIC, actValue.getCellType(), msg);
-                   TestMathX.assertDouble(msg, expValue.getNumericCellValue(), actValue.getNumberValue(), TestMathX.POS_ZERO, TestMathX.DIFF_TOLERANCE_FACTOR);
+                   final double tolerance = targetFunctionName.equalsIgnoreCase("RATE")
+                           ? 0.000001 : TestMathX.DIFF_TOLERANCE_FACTOR;
+                   TestMathX.assertDouble(msg, expValue.getNumericCellValue(), actValue.getNumberValue(), TestMathX.POS_ZERO, tolerance);
                    break;
                case STRING:
                    assertEquals(CellType.STRING, actValue.getCellType(), msg);

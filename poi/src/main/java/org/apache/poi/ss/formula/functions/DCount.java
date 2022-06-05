@@ -15,26 +15,34 @@
    limitations under the License.
 ==================================================================== */
 
+package org.apache.poi.ss.formula.functions;
 
-
-/*
- * DateUtil.java
- *
- * Created on January 19, 2002, 9:30 AM
- */
-package org.apache.poi.hssf.usermodel;
-
-import java.util.Calendar;
-
-import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.formula.eval.NumberEval;
+import org.apache.poi.ss.formula.eval.NumericValueEval;
+import org.apache.poi.ss.formula.eval.ValueEval;
 
 /**
- * Contains methods for dealing with Excel dates.
- * @deprecated Use {@link DateUtil} instead
+ * Implementation of the DCount function:
+ * Counts the number of numeric cells in a column in an area with given conditions.
  */
-@Deprecated
-public final class HSSFDateUtil extends DateUtil {
-    protected static int absoluteDay(Calendar cal, boolean use1904windowing) {
-        return DateUtil.absoluteDay(cal, use1904windowing);
+public final class DCount implements IDStarAlgorithm {
+    private long count;
+
+    @Override
+    public boolean processMatch(ValueEval eval) {
+        if (eval instanceof NumericValueEval) {
+            count++;
+        }
+        return true;
+    }
+
+    @Override
+    public ValueEval getResult() {
+        return new NumberEval(count);
+    }
+
+    @Override
+    public boolean allowEmptyMatchField() {
+        return true;
     }
 }

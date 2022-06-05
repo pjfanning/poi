@@ -110,29 +110,17 @@ def poijobs = [
 ]
 
 def xmlbeansjobs = [
-        [ name: 'POI-XMLBeans-DSL-1.8', jdk: '1.8', trigger: 'H */12 * * *', skipcigame: true,
+        [ name: 'POI-XMLBeans-DSL-1.8', jdk: '1.8', trigger: 'H */12 * * *', skipcigame: true, gradle: true,
         ],
-        [ name: 'POI-XMLBeans-DSL-1.11', jdk: '1.11', trigger: triggerSundays, skipcigame: true
+        [ name: 'POI-XMLBeans-DSL-1.11', jdk: '1.11', trigger: triggerSundays, skipcigame: true, gradle: true,
         ],
-        [ name: 'POI-XMLBeans-DSL-1.12', jdk: '1.12', trigger: triggerSundays, skipcigame: true,
-          // let's save some CPU cycles here, 12 is not a LTS and JDK 13 is GA now
-          disabled: true
-        ],
-        [ name: 'POI-XMLBeans-DSL-1.14', jdk: '1.14', trigger: triggerSundays, skipcigame: true,
-          // let's save some CPU cycles here, 14 is not a LTS and JDK 15 is GA now
-          disabled: true
-        ],
-        [ name: 'POI-XMLBeans-DSL-1.15', jdk: '1.15', trigger: triggerSundays, skipcigame: true,
-          // let's save some CPU cycles here, 15 is not a LTS and JDK 16 is GA now
-          disabled: true
-        ],
-        [ name: 'POI-XMLBeans-DSL-1.16', jdk: '1.16', trigger: triggerSundays, skipcigame: true,
+        [ name: 'POI-XMLBeans-DSL-1.16', jdk: '1.16', trigger: triggerSundays, skipcigame: true, gradle: true,
           // let's save some CPU cycles here, 16 is not a LTS and JDK 17 is GA
           disabled: true
         ],
-        [ name: 'POI-XMLBeans-DSL-1.17', jdk: '1.17', trigger: triggerSundays, skipcigame: true
+        [ name: 'POI-XMLBeans-DSL-1.17', jdk: '1.17', trigger: triggerSundays, skipcigame: true, gradle: true,
         ],
-        [ name: 'POI-XMLBeans-DSL-1.18', jdk: '1.18', trigger: triggerSundays, skipcigame: true
+        [ name: 'POI-XMLBeans-DSL-1.18', jdk: '1.18', trigger: triggerSundays, skipcigame: true, gradle: true,
         ],
         [ name: 'POI-XMLBeans-DSL-Sonar', jdk: '1.11', trigger: triggerSundays, skipcigame: true,
           sonar: true
@@ -153,18 +141,18 @@ def defaultMaven = 'maven_3_latest'
 def defaultSlaves = '(ubuntu)&&!beam&&!cloud-slave&&!H29'
 
 def jdkMapping = [
-        '1.8': 'jdk_1.8_latest',
-        '1.10': 'jdk_10_latest',
-        '1.11': 'jdk_11_latest',
-        '1.12': 'jdk_12_latest',
-        '1.13': 'jdk_13_latest',
-        '1.14': 'jdk_14_latest',
-        '1.15': 'jdk_15_latest',
-        '1.16': 'jdk_16_latest',
-        '1.17': 'jdk_17_latest',
-        '1.18': 'jdk_18_latest',
-        'OpenJDK 1.8': 'adoptopenjdk_hotspot_8u282',
-        'IBMJDK': 'ibmjdk_1.8.0_261',
+        '1.8': [ jenkinsJdk: 'jdk_1.8_latest', jdkVersion: 8, jdkVendor: 'oracle' ],
+        '1.10': [ jenkinsJdk: 'jdk_10_latest', jdkVersion: 10, jdkVendor: 'oracle' ],
+        '1.11': [ jenkinsJdk: 'jdk_11_latest', jdkVersion: 11, jdkVendor: 'oracle' ],
+        '1.12': [ jenkinsJdk: 'jdk_12_latest', jdkVersion: 12, jdkVendor: '' ],
+        '1.13': [ jenkinsJdk: 'jdk_13_latest', jdkVersion: 13, jdkVendor: '' ],
+        '1.14': [ jenkinsJdk: 'jdk_14_latest', jdkVersion: 14, jdkVendor: '' ],
+        '1.15': [ jenkinsJdk: 'jdk_15_latest', jdkVersion: 15, jdkVendor: '' ],
+        '1.16': [ jenkinsJdk: 'jdk_16_latest', jdkVersion: 16, jdkVendor: '' ],
+        '1.17': [ jenkinsJdk: 'jdk_17_latest', jdkVersion: 17, jdkVendor: '' ],
+        '1.18': [ jenkinsJdk: 'jdk_18_latest', jdkVersion: 18, jdkVendor: '' ],
+        'OpenJDK 1.8': [ jenkinsJdk: 'adoptopenjdk_hotspot_8u282', jdkVersion: 8, jdkVendor: 'adoptopenjdk' ],
+        'IBMJDK': [ jenkinsJdk: 'ibmjdk_1.8.0_261', jdkVersion: 8, jdkVendor: 'ibm' ]
 ]
 
 static def shellEx(def context, String cmd, def poijob) {
@@ -213,8 +201,9 @@ rm -rf examples excelant integrationtest main ooxml ooxml-schema scratchpad buil
 
 # show which files are currently modified in the working copy
 svn status || true
-# make sure no changed module-class-files are lingering on
+# make sure no changed module-class-files or ooxml-lite-report-files are lingering on
 svn revert poi*/src/*/java9/module-info.* || true
+svn revert src/resources/ooxml-lite-report.* || true
 
 # print out information about which exact version of java we are using
 echo Java-Home: $JAVA_HOME
@@ -314,7 +303,7 @@ poijobs.each { poijob ->
                 }
             }
         }
-        jdk(jdkMapping.get(jdkKey))
+        jdk(jdkMapping.get(jdkKey).jenkinsJdk)
         scm {
             if (poijob.githubpr) {
                 git {
@@ -395,6 +384,10 @@ poijobs.each { poijob ->
                     switches('-Dsonar.organization=apache')
                     switches('-Dsonar.projectKey=poi-parent')
                     switches('-Dsonar.host.url=https://sonarcloud.io')
+                    switches("-PjdkVersion=${jdkMapping.get(jdkKey).jdkVersion}")
+                    if (jdkMapping.get(jdkKey).jdkVendor != '') {
+                        switches("-PjdkVendor=${jdkMapping.get(jdkKey).jdkVendor}")
+                    }
                     tasks('clean')
                     tasks('check')
                     tasks('jacocoTestReport')
@@ -445,6 +438,10 @@ poijobs.each { poijob ->
                         }
                         if (poijob.saxonTest) {
                             switches('-Psaxon.test=true')
+                        }
+                        switches("-PjdkVersion=${jdkMapping.get(jdkKey).jdkVersion}")
+                        if (jdkMapping.get(jdkKey).jdkVendor != '') {
+                            switches("-PjdkVendor=${jdkMapping.get(jdkKey).jdkVendor}")
                         }
                     }
                 } else {
@@ -535,7 +532,7 @@ xmlbeansjobs.each { xjob ->
                 // when using JDK 9/10 for running Ant, we need to provide more modules for the forbidden-api-checks task
                 // on JDK 11 and newer there is no such module any more, so do not add it here
                 env('ANT_OPTS', '--add-modules=java.xml.bind --add-opens=java.xml/com.sun.org.apache.xerces.internal.util=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED')
-            } else if (jdkKey == '1.11' || jdkKey == '1.12' || jdkKey == '1.13' || jdkKey == '1.14' || jdkKey == '1.15' || jdkKey == '1.16' || jdkKey == '1.17') {
+            } else if (jdkKey == '1.11' || jdkKey == '1.12' || jdkKey == '1.13' || jdkKey == '1.14' || jdkKey == '1.15' || jdkKey == '1.16' || jdkKey == '1.17' || jdkKey == '1.18') {
                 env('ANT_OPTS', '--add-opens=java.xml/com.sun.org.apache.xerces.internal.util=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED')
             }
             // will be needed for forbidden-apis-check: env('ANT_HOME', xjob.windows ? 'f:\\jenkins\\tools\\ant\\latest' : '/usr/share/ant')
@@ -556,7 +553,7 @@ xmlbeansjobs.each { xjob ->
                 }
             }
         }
-        jdk(jdkMapping.get(jdkKey))
+        jdk(jdkMapping.get(jdkKey).jenkinsJdk)
         scm {
             svn(xmlbeansSvnBase) { svnNode ->
                 svnNode / browser(class: 'hudson.scm.browsers.ViewSVN') /
@@ -585,6 +582,10 @@ xmlbeansjobs.each { xjob ->
                     switches('-Dsonar.organization=apache')
                     switches('-Dsonar.projectKey=apache_xmlbeans')
                     switches('-Dsonar.host.url=https://sonarcloud.io')
+                    switches("-PjdkVersion=${jdkMapping.get(jdkKey).jdkVersion}")
+                    if (jdkMapping.get(jdkKey).jdkVendor != '') {
+                        switches("-PjdkVendor=${jdkMapping.get(jdkKey).jdkVendor}")
+                    }
                 }
                 tasks('clean')
                 tasks('jenkins')

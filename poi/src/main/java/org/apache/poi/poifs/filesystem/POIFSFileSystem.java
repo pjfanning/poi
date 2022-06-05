@@ -195,7 +195,7 @@ public class POIFSFileSystem extends BlockStore
      *
      * @param channel the FileChannel from which to read the data
      * @throws IOException on errors reading, or on invalid data
-     * @see POIFSFileSystem(FileChannel, boolean, boolean) this constructor gives more control over whether to
+     * @see #POIFSFileSystem(FileChannel, boolean, boolean) this constructor gives more control over whether to
      * close the provided channel
      */
     public POIFSFileSystem(FileChannel channel)
@@ -215,7 +215,7 @@ public class POIFSFileSystem extends BlockStore
      * @param channel  the FileChannel from which to read or read/write the data
      * @param readOnly whether the POIFileSystem will only be used in read-only mode
      * @throws IOException on errors reading, or on invalid data
-     * @see POIFSFileSystem(FileChannel, boolean, boolean) this constructor gives more control over whether to
+     * @see #POIFSFileSystem(FileChannel, boolean, boolean) this constructor gives more control over whether to
      * close the provided channel
      */
     public POIFSFileSystem(FileChannel channel, boolean readOnly)
@@ -454,7 +454,7 @@ public class POIFSFileSystem extends BlockStore
         // Ensure there's a spot in the file for it
         ByteBuffer buffer = ByteBuffer.allocate(bigBlockSize.getBigBlockSize());
         // Header isn't in BATs
-        long writeTo = Math.multiplyExact(1L + offset, (long)bigBlockSize.getBigBlockSize());
+        long writeTo = Math.multiplyExact(1L + offset, bigBlockSize.getBigBlockSize());
         _data.write(buffer, writeTo);
         // All done
         return newBAT;

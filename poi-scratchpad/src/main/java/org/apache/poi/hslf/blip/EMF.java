@@ -18,11 +18,11 @@
 package org.apache.poi.hslf.blip;
 
 import java.awt.Dimension;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.zip.InflaterInputStream;
 
+import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
 import org.apache.poi.ddf.EscherBSERecord;
 import org.apache.poi.ddf.EscherContainerRecord;
@@ -40,7 +40,7 @@ import org.apache.poi.util.Units;
 public final class EMF extends Metafile {
 
     /**
-     * @deprecated Use {@link HSLFSlideShow#addPicture(byte[], PictureType)} or one of its overloads to create new
+     * @deprecated Use {@link HSLFSlideShow#addPicture(byte[], org.apache.poi.sl.usermodel.PictureData.PictureType)} or one of its overloads to create new
      *             EMF. This API led to detached EMF instances (See Bugzilla
      *             46122) and prevented adding additional functionality.
      */
@@ -68,10 +68,11 @@ public final class EMF extends Metafile {
         Header header = new Header();
         header.read(rawdata, CHECKSUM_SIZE);
 
-        try (UnsynchronizedByteArrayOutputStream out = new UnsynchronizedByteArrayOutputStream();
-             InputStream is = new ByteArrayInputStream(rawdata);
-             InflaterInputStream inflater = new InflaterInputStream(is)) {
-
+        try (
+                InputStream is = new UnsynchronizedByteArrayInputStream(rawdata);
+                InflaterInputStream inflater = new InflaterInputStream(is);
+                UnsynchronizedByteArrayOutputStream out = new UnsynchronizedByteArrayOutputStream()
+        ) {
             long len = IOUtils.skipFully(is,header.getSize() + (long)CHECKSUM_SIZE);
             assert(len == header.getSize() + CHECKSUM_SIZE);
 

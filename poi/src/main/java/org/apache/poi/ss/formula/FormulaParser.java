@@ -97,6 +97,7 @@ import org.apache.poi.util.Internal;
 @Internal
 public final class FormulaParser {
     private static final Logger LOGGER = LogManager.getLogger(FormulaParser.class);
+
     private final String _formulaString;
     private final int _formulaLength;
     /** points at the next character to be read (after the {@link #look} codepoint) */
@@ -464,7 +465,7 @@ public final class FormulaParser {
     private ParseNode parseRangeable() {
         SkipWhite();
         int savePointer = _pointer;
-        SheetIdentifier sheetIden = parseSheetName();
+        SheetIdentifier sheetIden = parseSheetName(false);
 
         if (sheetIden == null) {
             resetPointer(savePointer);
@@ -681,11 +682,10 @@ public final class FormulaParser {
             GetChar();
         }
         // parse column quantifier
-        String startColumnName;
         String endColumnName = null;
         int nColQuantifiers = 0;
         int savePtr1 = _pointer;
-        startColumnName = parseAsColumnQuantifier();
+        String startColumnName = parseAsColumnQuantifier();
         if (startColumnName == null) {
             resetPointer(savePtr1);
         } else {
@@ -799,7 +799,7 @@ public final class FormulaParser {
 
         if (nColQuantifiers == 2) {
             if (startColumnName == null || endColumnName == null) {
-                throw new IllegalStateException("Fatal error");
+                throw new IllegalStateException("Cannot parse column: " + startColumnName + " and " + endColumnName + " with formula " + _formulaString);
             }
             int startIdx = tbl.findColumnIndex(startColumnName);
             int endIdx = tbl.findColumnIndex(endColumnName);
@@ -811,7 +811,7 @@ public final class FormulaParser {
 
         } else if (nColQuantifiers == 1 && !isThisRow) {
             if (startColumnName == null) {
-                throw new IllegalStateException("Fatal error");
+                throw new IllegalStateException("Cannot parse column: " + startColumnName + " with formula " + _formulaString);
             }
             int idx = tbl.findColumnIndex(startColumnName);
             if (idx == -1) {
@@ -1107,7 +1107,7 @@ public final class FormulaParser {
 
         public CellReference getCellReference() {
             if (_type != Type.CELL) {
-                throw new IllegalStateException("Not applicable to this type");
+                throw new IllegalStateException("Not applicable to this reference-type, expected CELL, but had " + _type);
             }
             return new CellReference(_rep);
         }
@@ -1154,7 +1154,7 @@ public final class FormulaParser {
      * Note - caller should reset {@link #_pointer} upon {@code null} result
      * @return The sheet name as an identifier {@code null} if '!' is not found in the right place
      */
-    private SheetIdentifier parseSheetName() {
+    private SheetIdentifier parseSheetName(boolean isSndPartOfQuotedRange) {
         String bookName;
         if (look == '[') {
             bookName = getBookName();
@@ -1162,8 +1162,10 @@ public final class FormulaParser {
             bookName = null;
         }
 
-        if (look == '\'') {
-            Match('\'');
+        if (look == '\'' || isSndPartOfQuotedRange) {
+            if (!isSndPartOfQuotedRange) {
+                Match('\'');
+            }
 
             if (look == '[')
                 bookName = getBookName();
@@ -1197,7 +1199,7 @@ public final class FormulaParser {
             }
             // See if it's a multi-sheet range, eg Sheet1:Sheet3!A1
             if (look == ':') {
-                return parseSheetRange(bookName, iden);
+                return parseSheetRange(bookName, iden, true);
             }
             return null;
         }
@@ -1221,7 +1223,7 @@ public final class FormulaParser {
             }
             // See if it's a multi-sheet range, eg Sheet1:Sheet3!A1
             if (look == ':') {
-                return parseSheetRange(bookName, iden);
+                return parseSheetRange(bookName, iden, false);
             }
             return null;
         }
@@ -1237,9 +1239,9 @@ public final class FormulaParser {
      * If we have something that looks like [book]Sheet1: or
      *  Sheet1, see if it's actually a range eg Sheet1:Sheet2!
      */
-    private SheetIdentifier parseSheetRange(String bookname, NameIdentifier sheet1Name) {
+    private SheetIdentifier parseSheetRange(String bookname, NameIdentifier sheet1Name, boolean isSndPartOfQuotedRange) {
         GetChar();
-        SheetIdentifier sheet2 = parseSheetName();
+        SheetIdentifier sheet2 = parseSheetName(isSndPartOfQuotedRange);
         if (sheet2 != null) {
            return new SheetRangeIdentifier(bookname, sheet1Name, sheet2.getSheetIdentifier());
         }

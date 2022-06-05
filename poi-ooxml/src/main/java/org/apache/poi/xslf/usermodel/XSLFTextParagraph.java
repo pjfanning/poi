@@ -18,6 +18,7 @@ package org.apache.poi.xslf.usermodel;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -60,7 +61,7 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
         void accept();
     }
 
-    XSLFTextParagraph(CTTextParagraph p, XSLFTextShape shape){
+    XSLFTextParagraph(CTTextParagraph p, XSLFTextShape shape) {
         _p = p;
         _runs = new ArrayList<>();
         _shape = shape;
@@ -82,7 +83,7 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
         }
     }
 
-    public String getText(){
+    public String getText() {
         StringBuilder out = new StringBuilder();
         for (XSLFTextRun r : _runs) {
             out.append(r.getRawText());
@@ -91,7 +92,7 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
     }
 
     @Internal
-    public CTTextParagraph getXmlObject(){
+    public CTTextParagraph getXmlObject() {
         return _p;
     }
 
@@ -102,13 +103,13 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
     }
 
     @Override
-    public List<XSLFTextRun> getTextRuns(){
-        return _runs;
+    public List<XSLFTextRun> getTextRuns() {
+        return Collections.unmodifiableList(_runs);
     }
 
     @Override
-    public Iterator<XSLFTextRun> iterator(){
-        return _runs.iterator();
+    public Iterator<XSLFTextRun> iterator() {
+        return getTextRuns().iterator();
     }
 
     /**
@@ -116,7 +117,7 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
      *
      * @return a new run of text
      */
-    public XSLFTextRun addNewTextRun(){
+    public XSLFTextRun addNewTextRun() {
         CTRegularTextRun r = _p.addNewR();
         CTTextCharacterProperties rPr = r.addNewRPr();
         rPr.setLang("en-US");
@@ -126,12 +127,49 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
     }
 
     /**
+     * Remove a text run
+     *
+     * @param  textRun a run of text
+     * @return whether the run was removed
+     * @since POI 5.2.2
+     */
+    public boolean removeTextRun(XSLFTextRun textRun) {
+        if (_runs.remove(textRun)) {
+            XmlObject xo = textRun.getXmlObject();
+            if (xo instanceof CTRegularTextRun) {
+                for (int i = 0; i < getXmlObject().sizeOfRArray(); i++) {
+                    if (getXmlObject().getRArray(i).equals(xo)) {
+                        getXmlObject().removeR(i);
+                        return true;
+                    }
+                }
+            } else if (xo instanceof CTTextField) {
+                for (int i = 0; i < getXmlObject().sizeOfFldArray(); i++) {
+                    if (getXmlObject().getFldArray(i).equals(xo)) {
+                        getXmlObject().removeFld(i);
+                        return true;
+                    }
+                }
+            } else if (xo instanceof CTTextLineBreak) {
+                for (int i = 0; i < getXmlObject().sizeOfBrArray(); i++) {
+                    if (getXmlObject().getBrArray(i).equals(xo)) {
+                        getXmlObject().removeBr(i);
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+        return false;
+    }
+
+    /**
      * Insert a line break
      *
      * @return text run representing this line break ('\n')
      */
     @SuppressWarnings("WeakerAccess")
-    public XSLFTextRun addLineBreak(){
+    public XSLFTextRun addLineBreak() {
         XSLFLineBreak run = new XSLFLineBreak(_p.addNewBr(), this);
         CTTextCharacterProperties brProps = run.getRPr(true);
         if (!_runs.isEmpty()) {
@@ -151,7 +189,7 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
     }
 
     @Override
-    public TextAlign getTextAlign(){
+    public TextAlign getTextAlign() {
         return fetchParagraphProperty((props,val) -> {
             if (props.isSetAlgn()) {
                 val.accept(TextAlign.values()[props.getAlgn().intValue() - 1]);
@@ -172,7 +210,7 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
     }
 
     @Override
-    public FontAlign getFontAlign(){
+    public FontAlign getFontAlign() {
         return fetchParagraphProperty((props,val) -> {
             if (props.isSetFontAlgn()) {
                 val.accept(FontAlign.values()[props.getFontAlgn().intValue() - 1]);
@@ -188,7 +226,7 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
      * @param align font align
      */
     @SuppressWarnings("unused")
-    public void setFontAlign(FontAlign align){
+    public void setFontAlign(FontAlign align) {
         CTTextParagraphProperties pr = _p.isSetPPr() ? _p.getPPr() : _p.addNewPPr();
         if(align == null) {
             if(pr.isSetFontAlgn()) {
@@ -205,7 +243,7 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
      * @return the font to be used on bullet characters within a given paragraph
      */
     @SuppressWarnings("WeakerAccess")
-    public String getBulletFont(){
+    public String getBulletFont() {
         return fetchParagraphProperty((props, val) -> {
             if (props.isSetBuFont()) {
                 val.accept(props.getBuFont().getTypeface());
@@ -214,7 +252,7 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
     }
 
     @SuppressWarnings("WeakerAccess")
-    public void setBulletFont(String typeface){
+    public void setBulletFont(String typeface) {
         CTTextParagraphProperties pr = _p.isSetPPr() ? _p.getPPr() : _p.addNewPPr();
         CTTextFont font = pr.isSetBuFont() ? pr.getBuFont() : pr.addNewBuFont();
         font.setTypeface(typeface);
@@ -224,7 +262,7 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
      * @return the character to be used in place of the standard bullet point
      */
     @SuppressWarnings("WeakerAccess")
-    public String getBulletCharacter(){
+    public String getBulletCharacter() {
         return fetchParagraphProperty((props, val) -> {
             if (props.isSetBuChar()) {
                 val.accept(props.getBuChar().getChar());
@@ -233,7 +271,7 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
     }
 
     @SuppressWarnings("WeakerAccess")
-    public void setBulletCharacter(String str){
+    public void setBulletCharacter(String str) {
         CTTextParagraphProperties pr = _p.isSetPPr() ? _p.getPPr() : _p.addNewPPr();
         CTTextCharBullet c = pr.isSetBuChar() ? pr.getBuChar() : pr.addNewBuChar();
         c.setChar(str);
@@ -245,7 +283,7 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
      * A <code>null</code> value means to use the text font color.
      */
     @SuppressWarnings("WeakerAccess")
-    public PaintStyle getBulletFontColor(){
+    public PaintStyle getBulletFontColor() {
         Color col = fetchParagraphProperty(this::fetchBulletFontColor);
         return (col == null) ? null : DrawPaint.createSolidPaint(col);
     }
@@ -253,7 +291,7 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
     private void fetchBulletFontColor(CTTextParagraphProperties props, Consumer<Color> val) {
         final XSLFSheet sheet = getParentShape().getSheet();
         final XSLFTheme theme = sheet.getTheme();
-        if(props.isSetBuClr()){
+        if(props.isSetBuClr()) {
             XSLFColor c = new XSLFColor(props.getBuClr(), theme, null, sheet);
             val.accept(c.getColor());
         }
@@ -297,15 +335,15 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
      * @return the bullet size
      */
     @SuppressWarnings("WeakerAccess")
-    public Double getBulletFontSize(){
+    public Double getBulletFontSize() {
         return fetchParagraphProperty(XSLFTextParagraph::fetchBulletFontSize);
     }
 
     private static void fetchBulletFontSize(CTTextParagraphProperties props, Consumer<Double> val) {
-        if(props.isSetBuSzPct()){
+        if(props.isSetBuSzPct()) {
             val.accept(POIXMLUnits.parsePercent(props.getBuSzPct().xgetVal()) * 0.001);
         }
-        if(props.isSetBuSzPts()){
+        if(props.isSetBuSzPts()) {
             val.accept( - props.getBuSzPts().getVal() * 0.01);
         }
     }
@@ -320,7 +358,7 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
      * </p>
      */
     @SuppressWarnings("WeakerAccess")
-    public void setBulletFontSize(double bulletSize){
+    public void setBulletFontSize(double bulletSize) {
         CTTextParagraphProperties pr = _p.isSetPPr() ? _p.getPPr() : _p.addNewPPr();
 
         if(bulletSize >= 0) {
@@ -369,7 +407,7 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
     }
 
     @Override
-    public void setIndent(Double indent){
+    public void setIndent(Double indent) {
         if ((indent == null) && !_p.isSetPPr()) {
             return;
         }
@@ -394,7 +432,7 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
 
 
     @Override
-    public void setLeftMargin(Double leftMargin){
+    public void setLeftMargin(Double leftMargin) {
         if (leftMargin == null && !_p.isSetPPr()) {
             return;
         }
@@ -422,7 +460,7 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
     }
 
     @Override
-    public void setRightMargin(Double rightMargin){
+    public void setRightMargin(Double rightMargin) {
         if (rightMargin == null && !_p.isSetPPr()) {
             return;
         }
@@ -441,7 +479,7 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
      * @return the right margin of the paragraph, null if unset
      */
     @Override
-    public Double getRightMargin(){
+    public Double getRightMargin() {
         return fetchParagraphProperty((props, val) -> {
             if (props.isSetMarR()) {
                 val.accept(Units.toPoints(props.getMarR()));
@@ -450,7 +488,7 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
     }
 
     @Override
-    public Double getDefaultTabSize(){
+    public Double getDefaultTabSize() {
         return fetchParagraphProperty((props, val) -> {
             if (props.isSetDefTabSz()) {
                 val.accept(Units.toPoints(POIXMLUnits.parseLength(props.xgetDefTabSz())));
@@ -476,19 +514,19 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
 
 
     @SuppressWarnings("WeakerAccess")
-    public void addTabStop(double value){
+    public void addTabStop(double value) {
         CTTextParagraphProperties pr = _p.isSetPPr() ? _p.getPPr() : _p.addNewPPr();
         CTTextTabStopList tabStops = pr.isSetTabLst() ? pr.getTabLst() : pr.addNewTabLst();
         tabStops.addNewTab().setPos(Units.toEMU(value));
     }
 
     @Override
-    public void setLineSpacing(Double lineSpacing){
+    public void setLineSpacing(Double lineSpacing) {
         setSpacing(lineSpacing, props -> props::getLnSpc, props -> props::addNewLnSpc, props -> props::unsetLnSpc);
     }
 
     @Override
-    public Double getLineSpacing(){
+    public Double getLineSpacing() {
         final Double lnSpc = getSpacing(props -> props::getLnSpc);
         if (lnSpc != null && lnSpc > 0) {
             // check if the percentage value is scaled
@@ -503,17 +541,17 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
     }
 
     @Override
-    public void setSpaceBefore(Double spaceBefore){
+    public void setSpaceBefore(Double spaceBefore) {
         setSpacing(spaceBefore, props -> props::getSpcBef, props -> props::addNewSpcBef, props -> props::unsetSpcBef);
     }
 
     @Override
-    public Double getSpaceBefore(){
+    public Double getSpaceBefore() {
         return getSpacing(props -> props::getSpcBef);
     }
 
     @Override
-    public void setSpaceAfter(Double spaceAfter){
+    public void setSpaceAfter(Double spaceAfter) {
         setSpacing(spaceAfter, props -> props::getSpcAft, props -> props::addNewSpcAft, props -> props::unsetSpcAft);
     }
 
@@ -579,7 +617,7 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
 
 
     @Override
-    public void setIndentLevel(int level){
+    public void setIndentLevel(int level) {
         CTTextParagraphProperties pr = _p.isSetPPr() ? _p.getPPr() : _p.addNewPPr();
         pr.setLvl(level);
     }
@@ -601,7 +639,7 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
     private static void fetchIsBullet(CTTextParagraphProperties props, Consumer<Boolean> val) {
         if (props.isSetBuNone()) {
             val.accept(false);
-        } else if(props.isSetBuFont() || props.isSetBuChar()){
+        } else if(props.isSetBuFont() || props.isSetBuChar()) {
             val.accept(true);
         }
     }
@@ -677,7 +715,7 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "[" + getClass() + "]" + getText();
     }
 
@@ -687,7 +725,7 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
      * there are no master slides or the master slides do not contain a text paragraph
      */
     @Internal
-    public CTTextParagraphProperties getDefaultMasterStyle(){
+    public CTTextParagraphProperties getDefaultMasterStyle() {
         CTPlaceholder ph = _shape.getPlaceholderDetails().getCTPlaceholder(false);
         String defaultStyleSelector;
         switch(ph == null ? -1 : ph.getType().intValue()) {
@@ -735,13 +773,13 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
         return null;
     }
 
-    private <T> T fetchParagraphProperty(ParaPropFetcher<T> fetcher){
+    private <T> T fetchParagraphProperty(ParaPropFetcher<T> fetcher) {
         final XSLFTextShape shape = getParentShape();
         return new ParagraphPropertyFetcher<>(this, fetcher).fetchProperty(shape);
     }
 
 
-    void copy(XSLFTextParagraph other){
+    void copy(XSLFTextParagraph other) {
         if (other == this) {
             return;
         }
@@ -792,35 +830,35 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
         // set properties again, in case we are based on a different
         // template
         TextAlign srcAlign = other.getTextAlign();
-        if(srcAlign != getTextAlign()){
+        if(srcAlign != getTextAlign()) {
             setTextAlign(srcAlign);
         }
 
         boolean isBullet = other.isBullet();
-        if(isBullet != isBullet()){
+        if(isBullet != isBullet()) {
             setBullet(isBullet);
             if(isBullet) {
                 String buFont = other.getBulletFont();
-                if(buFont != null && !buFont.equals(getBulletFont())){
+                if(buFont != null && !buFont.equals(getBulletFont())) {
                     setBulletFont(buFont);
                 }
                 String buChar = other.getBulletCharacter();
-                if(buChar != null && !buChar.equals(getBulletCharacter())){
+                if(buChar != null && !buChar.equals(getBulletCharacter())) {
                     setBulletCharacter(buChar);
                 }
                 PaintStyle buColor = other.getBulletFontColor();
-                if(buColor != null && !buColor.equals(getBulletFontColor())){
+                if(buColor != null && !buColor.equals(getBulletFontColor())) {
                     setBulletFontColor(buColor);
                 }
                 Double buSize = other.getBulletFontSize();
-                if(doubleNotEquals(buSize, getBulletFontSize())){
+                if(doubleNotEquals(buSize, getBulletFontSize())) {
                     setBulletFontSize(buSize);
                 }
             }
         }
 
         Double leftMargin = other.getLeftMargin();
-        if (doubleNotEquals(leftMargin, getLeftMargin())){
+        if (doubleNotEquals(leftMargin, getLeftMargin())) {
             setLeftMargin(leftMargin);
         }
 
@@ -873,7 +911,7 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
         if (!isBullet()) {
             return null;
         }
-        return new BulletStyle(){
+        return new BulletStyle() {
             @Override
             public String getBulletCharacter() {
                 return XSLFTextParagraph.this.getBulletCharacter();

@@ -46,8 +46,8 @@ final class WorkdayFunction implements FreeRefFunction {
     }
 
     /**
-     * Evaluate for WORKDAY. Given a date, a number of days and a optional date or interval of holidays, determines which date it is past
-     * number of parametrized workdays.
+     * Evaluate for WORKDAY. Given a date, a number of days and an optional date or interval of holidays, determines which date it is past
+     * number of parameterized workdays.
      *
      * @return {@link ValueEval} with date as its value.
      */

@@ -18,6 +18,7 @@
 package org.apache.poi.xssf.usermodel;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.poi.xssf.XSSFTestDataSamples.openSamplePackage;
 import static org.apache.poi.xssf.XSSFTestDataSamples.openSampleWorkbook;
 import static org.apache.poi.xssf.XSSFTestDataSamples.writeOutAndReadBack;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,6 +46,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
+import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.hssf.HSSFTestDataSamples;
 import org.apache.poi.ooxml.POIXMLException;
 import org.apache.poi.poifs.crypt.CryptoFunctions;
@@ -329,7 +332,7 @@ public final class TestXSSFSheet extends BaseTestXSheet {
             sheet.removeMergedRegion(0);
             assertEquals(0, sheet.getNumMergedRegions());
             assertNull(sheet.getCTWorksheet().getMergeCells(),
-                "CTMergeCells should be deleted after removing the last merged region on the sheet.");
+                    "CTMergeCells should be deleted after removing the last merged region on the sheet.");
             assertEquals(0, sheet.addMergedRegion(region_1));
             assertEquals(1, sheet.addMergedRegion(region_2));
             assertEquals(2, sheet.addMergedRegion(region_3));
@@ -370,6 +373,195 @@ public final class TestXSSFSheet extends BaseTestXSheet {
         }
     }
 
+    @Test
+    void saveGroupColumns() throws IOException {
+        try (
+                XSSFWorkbook workbook = new XSSFWorkbook();
+                UnsynchronizedByteArrayOutputStream bos = new UnsynchronizedByteArrayOutputStream()
+        ) {
+            XSSFSheet sheet = workbook.createSheet();
+            XSSFRow row0 = sheet.createRow(0);
+            XSSFRow row1 = sheet.createRow(1);
+            for (int i = 0; i < 8; i++) {
+                XSSFCell cell0 = row0.createCell(i);
+                cell0.setCellValue("Col" + CellReference.convertNumToColString(cell0.getColumnIndex()));
+                XSSFCell cell1 = row1.createCell(i);
+                cell1.setCellValue(cell1.getAddress().formatAsString());
+            }
+
+            sheet.groupColumn(2, 3);
+            sheet.groupColumn(5, 7);
+
+            workbook.write(bos);
+
+            try (XSSFWorkbook wb2 = new XSSFWorkbook(bos.toInputStream())) {
+                XSSFSheet wb2Sheet = wb2.getSheetAt(0);
+                CTCols cols = wb2Sheet.getCTWorksheet().getColsArray(0);
+                assertEquals(2, cols.sizeOfColArray());
+                CTCol col0 = cols.getColArray(0);
+                CTCol col1 = cols.getColArray(1);
+                assertEquals(3, col0.getMin());
+                assertEquals(4, col0.getMax());
+                assertFalse(col0.getHidden());
+                assertFalse(col0.getCollapsed());
+                assertEquals(6, col1.getMin());
+                assertEquals(8, col1.getMax());
+                assertFalse(col1.getHidden());
+                assertFalse(col1.getCollapsed());
+            }
+        }
+    }
+
+    @Test
+    void collapseGroupColumn() throws IOException {
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            XSSFSheet sheet = workbook.createSheet();
+            XSSFRow row0 = sheet.createRow(0);
+            XSSFRow row1 = sheet.createRow(1);
+            for (int i = 0; i < 8; i++) {
+                XSSFCell cell0 = row0.createCell(i);
+                cell0.setCellValue("Col" + CellReference.convertNumToColString(cell0.getColumnIndex()));
+                XSSFCell cell1 = row1.createCell(i);
+                cell1.setCellValue(cell1.getAddress().formatAsString());
+            }
+
+            sheet.groupColumn(2, 3);
+            sheet.groupColumn(5, 7);
+
+            CTCols cols = sheet.getCTWorksheet().getColsArray(0);
+            assertEquals(2, cols.sizeOfColArray());
+            CTCol col0 = cols.getColArray(0);
+            CTCol col1 = cols.getColArray(1);
+            assertEquals(3, col0.getMin());
+            assertEquals(4, col0.getMax());
+            assertFalse(col0.getHidden());
+            assertFalse(col0.getCollapsed());
+            assertEquals(6, col1.getMin());
+            assertEquals(8, col1.getMax());
+            assertFalse(col1.getHidden());
+            assertFalse(col1.getCollapsed());
+
+            sheet.setColumnGroupCollapsed(3, true);
+            cols = sheet.getCTWorksheet().getColsArray(0);
+            assertEquals(3, cols.sizeOfColArray());
+            col0 = cols.getColArray(0);
+            col1 = cols.getColArray(1);
+            CTCol col2 = cols.getColArray(2);
+            assertEquals(3, col0.getMin());
+            assertEquals(4, col0.getMax());
+            assertTrue(col0.getHidden());
+            assertFalse(col0.getCollapsed());
+            assertEquals(5, col1.getMin());
+            assertEquals(5, col1.getMax());
+            assertFalse(col1.getHidden());
+            assertTrue(col1.getCollapsed());
+            assertEquals(6, col2.getMin());
+            assertEquals(8, col2.getMax());
+            assertFalse(col2.getHidden());
+            assertFalse(col2.getCollapsed());
+        }
+    }
+
+    @Test
+    void expandGroupColumn() throws IOException {
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            XSSFSheet sheet = workbook.createSheet();
+            XSSFRow row0 = sheet.createRow(0);
+            XSSFRow row1 = sheet.createRow(1);
+            for (int i = 0; i < 8; i++) {
+                XSSFCell cell0 = row0.createCell(i);
+                cell0.setCellValue("Col" + CellReference.convertNumToColString(cell0.getColumnIndex()));
+                XSSFCell cell1 = row1.createCell(i);
+                cell1.setCellValue(cell1.getAddress().formatAsString());
+            }
+
+            sheet.groupColumn(2, 3);
+            sheet.groupColumn(5, 7);
+
+            sheet.setColumnGroupCollapsed(3, true);
+            CTCols cols = sheet.getCTWorksheet().getColsArray(0);
+            assertEquals(3, cols.sizeOfColArray());
+            CTCol col0 = cols.getColArray(0);
+            CTCol col1 = cols.getColArray(1);
+            CTCol col2 = cols.getColArray(2);
+            assertEquals(3, col0.getMin());
+            assertEquals(4, col0.getMax());
+            assertTrue(col0.getHidden());
+            assertFalse(col0.getCollapsed());
+            assertEquals(5, col1.getMin());
+            assertEquals(5, col1.getMax());
+            assertFalse(col1.getHidden());
+            assertTrue(col1.getCollapsed());
+            assertEquals(6, col2.getMin());
+            assertEquals(8, col2.getMax());
+            assertFalse(col2.getHidden());
+            assertFalse(col2.getCollapsed());
+
+            sheet.setColumnGroupCollapsed(3, false);
+            cols = sheet.getCTWorksheet().getColsArray(0);
+            assertEquals(3, cols.sizeOfColArray());
+            col0 = cols.getColArray(0);
+            col1 = cols.getColArray(1);
+            col2 = cols.getColArray(2);
+            assertEquals(3, col0.getMin());
+            assertEquals(4, col0.getMax());
+            assertFalse(col0.getHidden());
+            assertFalse(col0.getCollapsed());
+            assertEquals(5, col1.getMin());
+            assertEquals(5, col1.getMax());
+            assertFalse(col1.getHidden());
+            assertFalse(col1.getCollapsed());
+            assertEquals(6, col2.getMin());
+            assertEquals(8, col2.getMax());
+            assertFalse(col2.getHidden());
+            assertFalse(col2.getCollapsed());
+        }
+    }
+
+    @Test
+    void collapseNonExistentGroupColumn() throws IOException {
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            XSSFSheet sheet = workbook.createSheet();
+            XSSFRow row0 = sheet.createRow(0);
+            XSSFRow row1 = sheet.createRow(1);
+            for (int i = 0; i < 8; i++) {
+                XSSFCell cell0 = row0.createCell(i);
+                cell0.setCellValue("Col" + CellReference.convertNumToColString(cell0.getColumnIndex()));
+                XSSFCell cell1 = row1.createCell(i);
+                cell1.setCellValue(cell1.getAddress().formatAsString());
+            }
+
+            sheet.groupColumn(2, 3);
+            sheet.groupColumn(5, 7);
+
+            CTCols cols = sheet.getCTWorksheet().getColsArray(0);
+            assertEquals(2, cols.sizeOfColArray());
+            CTCol col0 = cols.getColArray(0);
+            CTCol col1 = cols.getColArray(1);
+            assertEquals(3, col0.getMin());
+            assertEquals(4, col0.getMax());
+            assertFalse(col0.getHidden());
+            assertFalse(col0.getCollapsed());
+            assertEquals(6, col1.getMin());
+            assertEquals(8, col1.getMax());
+            assertFalse(col1.getHidden());
+            assertFalse(col1.getCollapsed());
+
+            sheet.setColumnGroupCollapsed(4, true); //has no effect, col 4 is not in a group
+            cols = sheet.getCTWorksheet().getColsArray(0);
+            assertEquals(2, cols.sizeOfColArray());
+            col0 = cols.getColArray(0);
+            col1 = cols.getColArray(1);
+            assertEquals(3, col0.getMin());
+            assertEquals(4, col0.getMax());
+            assertFalse(col0.getHidden());
+            assertFalse(col0.getCollapsed());
+            assertEquals(6, col1.getMin());
+            assertEquals(8, col1.getMax());
+            assertFalse(col1.getHidden());
+            assertFalse(col1.getCollapsed());
+        }
+    }
 
     @Test
     void groupUngroupColumn() throws IOException {
@@ -486,28 +678,29 @@ public final class TestXSSFSheet extends BaseTestXSheet {
             sheet1.groupColumn(4, 7);
 
             assertEquals(1, cols.sizeOfColArray());
-            checkColumnGroup(cols.getColArray(0), 4, 7); // false, true
+            checkColumnGroup(cols.getColArray(0), 4, 7, false, false);
 
             sheet1.groupColumn(9, 12);
 
             assertEquals(2, cols.sizeOfColArray());
-            checkColumnGroup(cols.getColArray(0), 4, 7); // false, true
-            checkColumnGroup(cols.getColArray(1), 9, 12); // false, true
+            checkColumnGroup(cols.getColArray(0), 4, 7, false, false);
+            checkColumnGroup(cols.getColArray(1), 9, 12, false, false);
 
             sheet1.groupColumn(10, 11);
 
             assertEquals(4, cols.sizeOfColArray());
-            checkColumnGroup(cols.getColArray(0), 4, 7); // false, true
-            checkColumnGroup(cols.getColArray(1), 9, 9); // false, true
-            checkColumnGroup(cols.getColArray(2), 10, 11); // false, true
-            checkColumnGroup(cols.getColArray(3), 12, 12); // false, true
+            checkColumnGroup(cols.getColArray(0), 4, 7, false, false);
+            checkColumnGroup(cols.getColArray(1), 9, 9, false, false);
+            checkColumnGroup(cols.getColArray(2), 10, 11, false, false);
+            checkColumnGroup(cols.getColArray(3), 12, 12, false, false);
 
             // collapse columns - 1
             sheet1.setColumnGroupCollapsed(5, true);
 
-            // FIXME: we grew a column?
+            //TODO setColumnGroupCollapsed is currently broken (and may never have worked well)
+            // FIXME: we grew a column? -- this whole section needs investigation
             assertEquals(5, cols.sizeOfColArray());
-            checkColumnGroupIsCollapsed(cols.getColArray(0), 4, 7); // true, true
+            checkColumnGroupIsCollapsed(cols.getColArray(0), 4, 7);
             checkColumnGroup(cols.getColArray(1), 8, 8); // false, true
             checkColumnGroup(cols.getColArray(2), 9, 9); // false, true
             checkColumnGroup(cols.getColArray(3), 10, 11); // false, true
@@ -518,22 +711,22 @@ public final class TestXSSFSheet extends BaseTestXSheet {
             sheet1.setColumnGroupCollapsed(5, false);
             assertEquals(5, cols.sizeOfColArray());
 
-            checkColumnGroupIsExpanded(cols.getColArray(0), 4, 7); // false, true
+            checkColumnGroupIsExpanded(cols.getColArray(0), 4, 7);
             checkColumnGroup(cols.getColArray(1), 8, 8, false, false);
-            checkColumnGroup(cols.getColArray(2), 9, 9); // false, true
-            checkColumnGroup(cols.getColArray(3), 10, 11); // false, true
-            checkColumnGroup(cols.getColArray(4), 12, 12); // false, true
+            checkColumnGroup(cols.getColArray(2), 9, 9, false, false);
+            checkColumnGroup(cols.getColArray(3), 10, 11, false, false);
+            checkColumnGroup(cols.getColArray(4), 12, 12, false, false);
 
 
             //collapse - 2
             sheet1.setColumnGroupCollapsed(9, true);
             // it grew again?
             assertEquals(6, cols.sizeOfColArray());
-            checkColumnGroup(cols.getColArray(0), 4, 7); // false, true
+            checkColumnGroup(cols.getColArray(0), 4, 7, false, false);
             checkColumnGroup(cols.getColArray(1), 8, 8, false, false);
-            checkColumnGroupIsCollapsed(cols.getColArray(2), 9, 9); // true, true
-            checkColumnGroupIsCollapsed(cols.getColArray(3), 10, 11); // true, true
-            checkColumnGroupIsCollapsed(cols.getColArray(4), 12, 12); // true, true
+            checkColumnGroupIsCollapsed(cols.getColArray(2), 9, 9); // true, true);
+            checkColumnGroupIsCollapsed(cols.getColArray(3), 10, 11); // true, true);
+            checkColumnGroupIsCollapsed(cols.getColArray(4), 12, 12); // true, true);
             // why was this column group added?
             checkColumnGroup(cols.getColArray(5), 13, 13); // false, true
 
@@ -579,12 +772,12 @@ public final class TestXSSFSheet extends BaseTestXSheet {
                 cols = sheet1.getCTWorksheet().getColsArray(0);
 
                 assertEquals(6, cols.sizeOfColArray());
-                checkColumnGroup(cols.getColArray(0), 4, 7, false, true);
-                checkColumnGroup(cols.getColArray(1), 8, 8, false, true);
-                checkColumnGroup(cols.getColArray(2), 9, 9, false, true);
-                checkColumnGroup(cols.getColArray(3), 10, 11, false, true);
-                checkColumnGroup(cols.getColArray(4), 12, 12, false, true);
-                checkColumnGroup(cols.getColArray(5), 13, 13, false, true);
+                checkColumnGroup(cols.getColArray(0), 4, 7, false, false);
+                checkColumnGroup(cols.getColArray(1), 8, 8, false, false);
+                checkColumnGroup(cols.getColArray(2), 9, 9, false, false);
+                checkColumnGroup(cols.getColArray(3), 10, 11, false, false);
+                checkColumnGroup(cols.getColArray(4), 12, 12, false, false);
+                checkColumnGroup(cols.getColArray(5), 13, 13, false, false);
             }
         }
     }
@@ -592,16 +785,15 @@ public final class TestXSSFSheet extends BaseTestXSheet {
     /**
      * Verify that column groups were created correctly after Sheet.groupColumn
      *
-     * @param col the column group xml bean
+     * @param col             the column group xml bean
      * @param fromColumnIndex 0-indexed
-     * @param toColumnIndex 0-indexed
+     * @param toColumnIndex   0-indexed
      */
     @SuppressWarnings("SameParameterValue")
     private static void checkColumnGroup(
             CTCol col,
             int fromColumnIndex, int toColumnIndex,
-            boolean isSetHidden, boolean isSetCollapsed
-            ) {
+            boolean isSetHidden, boolean isSetCollapsed) {
         assertEquals(fromColumnIndex, col.getMin() - 1, "from column index"); // 1 based
         assertEquals(toColumnIndex, col.getMax() - 1, "to column index"); // 1 based
         assertEquals(isSetHidden, col.isSetHidden(), "isSetHidden");
@@ -611,47 +803,58 @@ public final class TestXSSFSheet extends BaseTestXSheet {
     /**
      * Verify that column groups were created correctly after Sheet.groupColumn
      *
-     * @param col the column group xml bean
+     * @param col             the column group xml bean
      * @param fromColumnIndex 0-indexed
-     * @param toColumnIndex 0-indexed
+     * @param toColumnIndex   0-indexed
      */
     private static void checkColumnGroup(CTCol col, int fromColumnIndex, int toColumnIndex) {
         assertEquals(fromColumnIndex, col.getMin() - 1, "from column index"); // 1 based
         assertEquals(toColumnIndex, col.getMax() - 1, "to column index"); // 1 based
         assertFalse(col.isSetHidden(), "isSetHidden");
-        assertTrue(col.isSetCollapsed(), "isSetCollapsed"); //not necessarily set
     }
 
     /**
      * Verify that column groups were created correctly after Sheet.groupColumn
      *
-     * @param col the column group xml bean
+     * @param col             the column group xml bean
      * @param fromColumnIndex 0-indexed
-     * @param toColumnIndex 0-indexed
+     * @param toColumnIndex   0-indexed
      */
     private static void checkColumnGroupIsCollapsed(CTCol col, int fromColumnIndex, int toColumnIndex) {
+        checkColumnGroupIsCollapsed(col, fromColumnIndex, toColumnIndex, false, false);
+    }
+
+    /**
+     * Verify that column groups were created correctly after Sheet.groupColumn
+     *
+     * @param col             the column group xml bean
+     * @param fromColumnIndex 0-indexed
+     * @param toColumnIndex   0-indexed
+     */
+    private static void checkColumnGroupIsCollapsed(CTCol col, int fromColumnIndex, int toColumnIndex,
+                                                    boolean isSetCollapsed, boolean collapsed) {
         assertEquals(fromColumnIndex, col.getMin() - 1, "from column index"); // 1 based
         assertEquals(toColumnIndex, col.getMax() - 1, "to column index"); // 1 based
         assertTrue(col.isSetHidden(), "isSetHidden");
-        assertTrue(col.isSetCollapsed(), "isSetCollapsed");
-        //assertTrue(col.getCollapsed(), "getCollapsed");
+        assertEquals(isSetCollapsed, col.isSetCollapsed(), "isSetCollapsed");
+        if (isSetCollapsed) {
+            assertEquals(collapsed, col.getCollapsed(), "getCollapsed");
+        }
     }
 
     /**
      * Verify that column groups were created correctly after Sheet.groupColumn
      *
-     * @param col the column group xml bean
+     * @param col             the column group xml bean
      * @param fromColumnIndex 0-indexed
-     * @param toColumnIndex 0-indexed
+     * @param toColumnIndex   0-indexed
      */
     @SuppressWarnings("SameParameterValue")
     private static void checkColumnGroupIsExpanded(CTCol col, int fromColumnIndex, int toColumnIndex) {
         assertEquals(fromColumnIndex, col.getMin() - 1, "from column index"); // 1 based
         assertEquals(toColumnIndex, col.getMax() - 1, "to column index"); // 1 based
         assertFalse(col.isSetHidden(), "isSetHidden");
-        assertTrue(col.isSetCollapsed(), "isSetCollapsed");
-        //assertTrue(!col.isSetCollapsed() || !col.getCollapsed(), "isSetCollapsed");
-        //assertFalse(col.getCollapsed(), "getCollapsed");
+        assertTrue(!col.isSetCollapsed() || !col.getCollapsed(), "isSetCollapsed");
     }
 
     /**
@@ -1202,25 +1405,25 @@ public final class TestXSSFSheet extends BaseTestXSheet {
 
     @ParameterizedTest
     @CsvSource(value = {
-        // run with the file provided in the Bug-Report
-        "54607.xlsx, '1, 0, 0', '0, 0, 0'",
+            // run with the file provided in the Bug-Report
+            "54607.xlsx, '1, 0, 0', '0, 0, 0'",
 
-        // run with some other flie to see
-        "54436.xlsx, '0', '0'",
-        "TwoSheetsNoneHidden.xlsx, '0, 0', '0, 0'",
-        "TwoSheetsNoneHidden.xls, '0, 0', '0, 0'"
+            // run with some other flie to see
+            "54436.xlsx, '0', '0'",
+            "TwoSheetsNoneHidden.xlsx, '0, 0', '0, 0'",
+            "TwoSheetsNoneHidden.xls, '0, 0', '0, 0'"
     })
     void bug54607(String file, String topRows, String leftCols) throws IOException {
         Consumer<Workbook> testFun = (wb) -> {
-            for (int i=0; i<2; i++) {
-                Function<Sheet, Short> sheetFun = (i==0) ? Sheet::getTopRow : Sheet::getLeftCol;
-                String exp = (i==0) ? topRows : leftCols;
+            for (int i = 0; i < 2; i++) {
+                Function<Sheet, Short> sheetFun = (i == 0) ? Sheet::getTopRow : Sheet::getLeftCol;
+                String exp = (i == 0) ? topRows : leftCols;
 
                 wb.forEach(sh -> assertNotNull(sh.getSheetName()));
 
                 String act = StreamSupport.stream(Spliterators.spliterator(wb.iterator(), wb.getNumberOfSheets(), Spliterator.ORDERED), false).
-                    map(sh -> sheetFun.apply(sh).toString()).
-                    collect(Collectors.joining(", "));
+                        map(sh -> sheetFun.apply(sh).toString()).
+                        collect(Collectors.joining(", "));
 
                 assertEquals(exp, act);
             }
@@ -1285,7 +1488,7 @@ public final class TestXSSFSheet extends BaseTestXSheet {
         }
     }
 
-    private XSSFWorkbook setupSheet(){
+    private XSSFWorkbook setupSheet() {
         //set up workbook
         XSSFWorkbook wb = new XSSFWorkbook();
         XSSFSheet sheet = wb.createSheet();
@@ -1885,7 +2088,7 @@ public final class TestXSSFSheet extends BaseTestXSheet {
             Sheet sheet3 = wb.cloneSheet(0);
             wb.setSheetName(2, "Sheet 3");
 
-            Sheet[] sheets = { sheet2, sheet3 };
+            Sheet[] sheets = {sheet2, sheet3};
 
             for (Sheet sheet : sheets) {
                 Drawing<?> drawing = sheet.createDrawingPatriarch();
@@ -1954,16 +2157,16 @@ public final class TestXSSFSheet extends BaseTestXSheet {
 
     @Test
     void testSheetForceFormulaRecalculationDefaultValues() throws IOException {
-        try (Workbook wb = _testDataProvider.openSampleWorkbook("sample.xlsx")){
+        try (Workbook wb = _testDataProvider.openSampleWorkbook("sample.xlsx")) {
             for (Sheet s : wb) {
-                assertEquals(wb.getForceFormulaRecalculation(),s.getForceFormulaRecalculation());
+                assertEquals(wb.getForceFormulaRecalculation(), s.getForceFormulaRecalculation());
             }
         }
     }
 
     @Test
     void testWorkbookSetForceFormulaRecalculation() throws IOException {
-        try (Workbook wb = _testDataProvider.openSampleWorkbook("sample.xlsx")){
+        try (Workbook wb = _testDataProvider.openSampleWorkbook("sample.xlsx")) {
             wb.setForceFormulaRecalculation(true);
             assertTrue(wb.getForceFormulaRecalculation());
         }
@@ -1989,7 +2192,7 @@ public final class TestXSSFSheet extends BaseTestXSheet {
     }
 
     @Test
-    public void bug65120() throws IOException {
+    void bug65120() throws IOException {
         try (XSSFWorkbook wb = new XSSFWorkbook()) {
             XSSFCreationHelper creationHelper = wb.getCreationHelper();
 
@@ -2021,4 +2224,157 @@ public final class TestXSSFSheet extends BaseTestXSheet {
         }
     }
 
+    @Test
+    void testCustomWidthAndHeight() throws IOException {
+        try (XSSFWorkbook wb = (XSSFWorkbook) _testDataProvider.openSampleWorkbook("WidthsAndHeights.xlsx")) {
+            XSSFSheet sheet = wb.getSheetAt(0);
+            assertEquals(8, sheet.getDefaultColumnWidth());
+            assertEquals(300, sheet.getDefaultRowHeight());
+            assertEquals(15.0, sheet.getDefaultRowHeightInPoints(), 0.00001);
+            assertEquals(5120, sheet.getColumnWidth(0));
+            assertEquals(2048, sheet.getColumnWidth(1));
+            assertEquals(0, sheet.getColumnWidth(2));
+            assertEquals(140.034, sheet.getColumnWidthInPixels(0), 0.00001);
+            assertEquals(56.0136, sheet.getColumnWidthInPixels(1), 0.00001);
+            assertEquals(0.0, sheet.getColumnWidthInPixels(2), 0.00001);
+            assertFalse(sheet.isColumnHidden(0));
+            assertFalse(sheet.isColumnHidden(1));
+            assertTrue(sheet.isColumnHidden(2));
+            XSSFRow row0 = sheet.getRow(0);
+            assertEquals(750, row0.getHeight());
+            assertEquals(37.5, row0.getHeightInPoints(), 0.00001);
+            assertFalse(row0.getZeroHeight());
+            XSSFRow row1 = sheet.getRow(1);
+            assertEquals(300, row1.getHeight());
+            assertEquals(15.0, row1.getHeightInPoints(), 0.00001);
+            assertFalse(row1.getZeroHeight());
+            XSSFRow row2 = sheet.getRow(2);
+            assertEquals(15, row2.getHeight());
+            assertEquals(0.75, row2.getHeightInPoints(), 0.00001);
+            assertTrue(row2.getZeroHeight());
+        }
+    }
+
+    @Test
+    void testBug64536() throws IOException {
+        try (
+                XSSFWorkbook xssfWorkbook = (XSSFWorkbook) _testDataProvider.openSampleWorkbook("1_NoIden.xlsx");
+                UnsynchronizedByteArrayOutputStream bos = new UnsynchronizedByteArrayOutputStream()
+        ) {
+            XSSFSheet fileSheet = xssfWorkbook.getSheetAt(0);
+            assertEquals(CellRangeAddress.valueOf("B1:D9"), fileSheet.getDimension());
+
+            // Create Row and Cell, Then Set a Value
+            // 5, 2, 4 is just random number for test
+            Row fileRow = fileSheet.createRow(5);
+            Cell fileCell = fileRow.createCell(2, CellType.STRING);
+            fileCell.setCellValue("TEST VALUE");
+
+            xssfWorkbook.write(bos);
+
+            try (XSSFWorkbook xssfWorkbook2 = new XSSFWorkbook(bos.toInputStream())) {
+                XSSFSheet xssfSheet = xssfWorkbook2.getSheetAt(0);
+                assertEquals(CellRangeAddress.valueOf("B1:F9"), xssfSheet.getDimension());
+            }
+        }
+    }
+
+    @Test
+    void testNewSheetGetDimension() throws IOException {
+        try (XSSFWorkbook xssfWorkbook = new XSSFWorkbook()) {
+            XSSFSheet sheet = xssfWorkbook.createSheet();
+            assertEquals(CellRangeAddress.valueOf("A1"), sheet.getDimension());
+        }
+    }
+
+    @Test
+    void testRowShiftWithHyperlink1() throws IOException {
+        try (XSSFWorkbook wb = createWorkbookForRowShiftWithHyperlink1(true)) {
+            XSSFSheet sheet = wb.getSheetAt(0);
+            List<XSSFHyperlink> hyperlinks = sheet.getHyperlinkList();
+            assertEquals(1, hyperlinks.size());
+            assertEquals("B1:C1", hyperlinks.get(0).getCellRef());
+            assertEquals(3, sheet.getLastRowNum());
+
+            sheet.shiftRows(2, 3, -2);
+            assertEquals(1, sheet.getLastRowNum());
+            XSSFRow row0 = sheet.getRow(0);
+            XSSFRow row1 = sheet.getRow(1);
+            assertEquals("row2", row0.getCell(0).getStringCellValue());
+            assertEquals("row3", row1.getCell(0).getStringCellValue());
+            assertEquals(0, sheet.getHyperlinkList().size());
+        }
+    }
+
+    @Test
+    void testRowShiftWithHyperlink2() throws IOException {
+        try (XSSFWorkbook wb = createWorkbookForRowShiftWithHyperlink1(false)) {
+            XSSFSheet sheet = wb.getSheetAt(0);
+            List<XSSFHyperlink> hyperlinks = sheet.getHyperlinkList();
+            assertEquals(1, hyperlinks.size());
+            assertEquals("B1:B2", hyperlinks.get(0).getCellRef());
+            assertEquals(3, sheet.getLastRowNum());
+
+            sheet.shiftRows(2, 3, -2);
+            assertEquals(1, sheet.getLastRowNum());
+            XSSFRow row0 = sheet.getRow(0);
+            XSSFRow row1 = sheet.getRow(1);
+            assertEquals("row2", row0.getCell(0).getStringCellValue());
+            assertEquals("row3", row1.getCell(0).getStringCellValue());
+            assertEquals(0, sheet.getHyperlinkList().size());
+        }
+    }
+
+    @Test
+    void testRowShiftWithHyperlink3() throws IOException {
+        try (XSSFWorkbook wb = createWorkbookForRowShiftWithHyperlink1(false)) {
+            XSSFSheet sheet = wb.getSheetAt(0);
+            List<XSSFHyperlink> hyperlinks = sheet.getHyperlinkList();
+            assertEquals(1, hyperlinks.size());
+            assertEquals("B1:B2", hyperlinks.get(0).getCellRef());
+            assertEquals(3, sheet.getLastRowNum());
+
+            sheet.shiftRows(2, 3, -1);
+            assertEquals(2, sheet.getLastRowNum());
+            XSSFRow row0 = sheet.getRow(0);
+            XSSFRow row1 = sheet.getRow(1);
+            XSSFRow row2 = sheet.getRow(2);
+            assertEquals("row0", row0.getCell(0).getStringCellValue());
+            assertEquals("row2", row1.getCell(0).getStringCellValue());
+            assertEquals("row3", row2.getCell(0).getStringCellValue());
+            List<XSSFHyperlink> hyperlinks2 = sheet.getHyperlinkList();
+            assertEquals(1, hyperlinks2.size());
+            assertEquals("B1", hyperlinks2.get(0).getCellRef());
+        }
+    }
+
+    private XSSFWorkbook createWorkbookForRowShiftWithHyperlink1(boolean hyperlinkOneRow) {
+        XSSFWorkbook wb = new XSSFWorkbook();
+        XSSFSheet sheet = wb.createSheet("Sheet1");
+        XSSFRow row0 = sheet.createRow(0);
+        XSSFRow row1 = sheet.createRow(1);
+        XSSFRow row2 = sheet.createRow(2);
+        XSSFRow row3 = sheet.createRow(3);
+        row0.createCell(0).setCellValue("row0");
+        row1.createCell(0).setCellValue("row1");
+        row2.createCell(0).setCellValue("row2");
+        row3.createCell(0).setCellValue("row3");
+        row0.createCell(1).setCellValue("https://www.example.com");
+        if (hyperlinkOneRow) {
+            row0.createCell(2).setCellValue("https://www.example.com");
+        } else {
+            row1.createCell(1).setCellValue("https://www.example.com");
+        }
+        XSSFHyperlink hyperlink = new XSSFHyperlink(HyperlinkType.URL);
+        hyperlink.setAddress("https://www.example.com");
+        hyperlink.setFirstRow(0);
+        hyperlink.setFirstColumn(1);
+        if (hyperlinkOneRow) {
+            hyperlink.setLastColumn(2);
+        } else {
+            hyperlink.setLastRow(1);
+        }
+        sheet.addHyperlink(hyperlink);
+        return wb;
+    }
 }

@@ -69,22 +69,7 @@ import org.apache.poi.hssf.model.InternalSheet.UnsupportedBOFType;
 import org.apache.poi.hssf.model.InternalWorkbook;
 import org.apache.poi.hssf.model.RecordStream;
 import org.apache.poi.hssf.model.WorkbookRecordList;
-import org.apache.poi.hssf.record.AbstractEscherHolderRecord;
-import org.apache.poi.hssf.record.BackupRecord;
-import org.apache.poi.hssf.record.BoundSheetRecord;
-import org.apache.poi.hssf.record.DrawingGroupRecord;
-import org.apache.poi.hssf.record.ExtendedFormatRecord;
-import org.apache.poi.hssf.record.FilePassRecord;
-import org.apache.poi.hssf.record.FontRecord;
-import org.apache.poi.hssf.record.FormatRecord;
-import org.apache.poi.hssf.record.LabelRecord;
-import org.apache.poi.hssf.record.LabelSSTRecord;
-import org.apache.poi.hssf.record.NameRecord;
-import org.apache.poi.hssf.record.RecalcIdRecord;
-import org.apache.poi.hssf.record.Record;
-import org.apache.poi.hssf.record.RecordFactory;
-import org.apache.poi.hssf.record.SSTRecord;
-import org.apache.poi.hssf.record.UnknownRecord;
+import org.apache.poi.hssf.record.*;
 import org.apache.poi.hssf.record.aggregates.RecordAggregate.RecordVisitor;
 import org.apache.poi.hssf.record.common.UnicodeString;
 import org.apache.poi.hssf.record.crypto.Biff8DecryptingStream;
@@ -111,6 +96,7 @@ import org.apache.poi.ss.formula.SheetNameFormatter;
 import org.apache.poi.ss.formula.udf.AggregatingUDFFinder;
 import org.apache.poi.ss.formula.udf.IndexedUDFFinder;
 import org.apache.poi.ss.formula.udf.UDFFinder;
+import org.apache.poi.ss.usermodel.CellReferenceType;
 import org.apache.poi.ss.usermodel.Name;
 import org.apache.poi.ss.usermodel.Row.MissingCellPolicy;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -382,7 +368,7 @@ public final class HSSFWorkbook extends POIDocument implements Workbook {
         //  it happens to be spelled.
         InputStream stream = directory.createDocumentInputStream(workbookName);
 
-        List<Record> records = RecordFactory.createRecords(stream);
+        List<org.apache.poi.hssf.record.Record> records = RecordFactory.createRecords(stream);
 
         workbook = InternalWorkbook.createWorkbook(records);
         setPropertiesFromWorkbook(workbook);
@@ -472,10 +458,10 @@ public final class HSSFWorkbook extends POIDocument implements Workbook {
      * @see SSTRecord
      */
 
-    private void convertLabelRecords(List<Record> records, int offset) {
+    private void convertLabelRecords(List<org.apache.poi.hssf.record.Record> records, int offset) {
         LOGGER.atDebug().log("convertLabelRecords called");
         for (int k = offset; k < records.size(); k++) {
-            Record rec = records.get(k);
+            org.apache.poi.hssf.record.Record rec = records.get(k);
 
             if (rec.getSid() == LabelRecord.sid) {
                 LabelRecord oldrec = (LabelRecord) rec;
@@ -949,22 +935,22 @@ public final class HSSFWorkbook extends POIDocument implements Workbook {
             throw new IllegalArgumentException("sheetName must not be null");
         }
 
-		if (workbook.doesContainsSheetName(sheetname, _sheets.size())) {
-			throw new IllegalArgumentException("The workbook already contains a sheet named '" + sheetname + "'");
-		}
+        if (workbook.doesContainsSheetName(sheetname, _sheets.size())) {
+            throw new IllegalArgumentException("The workbook already contains a sheet named '" + sheetname + "'");
+        }
 
-		// YK: Mimic Excel and silently truncate sheet names longer than 31 characters
+        // YK: Mimic Excel and silently truncate sheet names longer than 31 characters
         // Issue a WARNING though in order to prevent a situation, where the provided long sheet name is
         // not accessible due to the trimming while we are not even aware of the reason and continue to use
         // the long name in generated formulas
         if(sheetname.length() > MAX_SENSITIVE_SHEET_NAME_LEN) {
             String trimmedSheetname = sheetname.substring(0, MAX_SENSITIVE_SHEET_NAME_LEN);
 
-			// we still need to warn about the trimming as the original sheet name won't be available
-			// e.g. when referenced by formulas
-			LOGGER.atWarn().log("Sheet '{}' will be added with a trimmed name '{}' for MS Excel compliance.",
-					sheetname, trimmedSheetname);
-			sheetname = trimmedSheetname;
+            // we still need to warn about the trimming as the original sheet name won't be available
+            // e.g. when referenced by formulas
+            LOGGER.atWarn().log("Sheet '{}' will be added with a trimmed name '{}' for MS Excel compliance.",
+                    sheetname, trimmedSheetname);
+            sheetname = trimmedSheetname;
         }
 
         HSSFSheet sheet = new HSSFSheet(this);
@@ -1465,7 +1451,7 @@ public final class HSSFWorkbook extends POIDocument implements Workbook {
      */
     private static final class SheetRecordCollector implements RecordVisitor {
 
-        private final List<Record> _list;
+        private final List<org.apache.poi.hssf.record.Record> _list;
         private int _totalSize;
 
         public SheetRecordCollector() {
@@ -1478,7 +1464,7 @@ public final class HSSFWorkbook extends POIDocument implements Workbook {
         }
 
         @Override
-        public void visitRecord(Record r) {
+        public void visitRecord(org.apache.poi.hssf.record.Record r) {
             _list.add(r);
             _totalSize += r.getRecordSize();
 
@@ -1486,7 +1472,7 @@ public final class HSSFWorkbook extends POIDocument implements Workbook {
 
         public int serialize(int offset, byte[] data) {
             int result = 0;
-            for (Record rec : _list) {
+            for (org.apache.poi.hssf.record.Record rec : _list) {
                 result += rec.serialize(offset + result, data);
             }
             return result;
@@ -1762,6 +1748,76 @@ public final class HSSFWorkbook extends POIDocument implements Workbook {
         return newName;
     }
 
+    @Override
+    public CellReferenceType getCellReferenceType() {
+        for (HSSFSheet hssfSheet : _sheets) {
+            InternalSheet internalSheet = hssfSheet.getSheet();
+
+            List<RecordBase> records = internalSheet.getRecords();
+
+            RefModeRecord refModeRecord = null;
+            for (RecordBase record : records) {
+                if (record instanceof RefModeRecord) {
+                    refModeRecord = (RefModeRecord)record;
+                    break;
+                }
+            }
+            if (refModeRecord == null) {
+                //no-op
+            } else if (refModeRecord.getMode() == RefModeRecord.USE_R1C1_MODE) {
+                return CellReferenceType.R1C1;
+            } else if (refModeRecord.getMode() == RefModeRecord.USE_A1_MODE) {
+                return CellReferenceType.A1;
+            }
+        }
+        return CellReferenceType.UNKNOWN;
+    }
+
+    /**
+     * Configure workbook to a specific cell reference type, e.g. R1C1 cell references (as opposed to A1 cell references).
+     * <p>
+     *     Note that HSSF format stores this information at sheet level - so if the workbook has no sheets,
+     *     this call will have no effect. It is recommended that you call this (possibly again) just before
+     *     writing HSSFWorkbook.
+     * </p>
+     * @param cellReferenceType the type of cell references used
+     * @since POI 5.2.1
+     */
+    @Override
+    public void setCellReferenceType(CellReferenceType cellReferenceType) {
+        for (HSSFSheet hssfSheet : _sheets) {
+
+            InternalSheet internalSheet = hssfSheet.getSheet();
+
+            List<RecordBase> records = internalSheet.getRecords();
+
+            RefModeRecord refModeRecord = null;
+            for (RecordBase record : records) {
+                if (record instanceof RefModeRecord) {
+                    refModeRecord = (RefModeRecord)record;
+                    break;
+                }
+            }
+            if (cellReferenceType == CellReferenceType.R1C1) {
+                if (refModeRecord == null) {
+                    refModeRecord = new RefModeRecord();
+                    records.add(records.size() - 1, refModeRecord);
+                }
+                refModeRecord.setMode(RefModeRecord.USE_R1C1_MODE);
+            } else if (cellReferenceType == CellReferenceType.A1) {
+                if (refModeRecord == null) {
+                    refModeRecord = new RefModeRecord();
+                    records.add(records.size() - 1, refModeRecord);
+                }
+                refModeRecord.setMode(RefModeRecord.USE_A1_MODE);
+            } else {
+                if (refModeRecord != null) {
+                    records.remove(refModeRecord);
+                }
+            }
+        }
+    }
+
     int getNameIndex(String name) {
 
         for (int k = 0; k < names.size(); k++) {
@@ -1803,7 +1859,7 @@ public final class HSSFWorkbook extends POIDocument implements Workbook {
      *
      * @return the HSSFDataFormat object
      * @see FormatRecord
-     * @see Record
+     * @see org.apache.poi.hssf.record.Record
      */
     @Override
     public HSSFDataFormat createDataFormat() {
@@ -1987,7 +2043,7 @@ public final class HSSFWorkbook extends POIDocument implements Workbook {
     public List<HSSFPictureData> getAllPictures() {
         // The drawing group record always exists at the top level, so we won't need to do this recursively.
         List<HSSFPictureData> pictures = new ArrayList<>();
-        for (Record r : workbook.getRecords()) {
+        for (org.apache.poi.hssf.record.Record r : workbook.getRecords()) {
             if (r instanceof AbstractEscherHolderRecord) {
                 ((AbstractEscherHolderRecord) r).decode();
                 List<EscherRecord> escherRecords = ((AbstractEscherHolderRecord) r).getEscherRecords();

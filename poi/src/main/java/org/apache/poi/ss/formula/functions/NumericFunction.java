@@ -20,6 +20,13 @@ package org.apache.poi.ss.formula.functions;
 import static org.apache.poi.ss.formula.eval.ErrorEval.VALUE_INVALID;
 
 import org.apache.poi.ss.formula.eval.*;
+import org.apache.poi.util.LocaleUtil;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.MathContext;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 
 public abstract class NumericFunction implements Function {
 
@@ -89,17 +96,31 @@ public abstract class NumericFunction implements Function {
                 return VALUE_INVALID;
             }
 
-            // TODO - DOLLAR() function impl is NQR
-            // result should be StringEval, with leading '$' and thousands separators
-            // current junits are asserting incorrect behaviour
-            return new NumberEval(val);
-        }catch (EvaluationException e) {
+            if (nPlaces < 0) {
+                BigDecimal divisor = BigDecimal.valueOf(Math.pow(10, -nPlaces));
+                BigInteger bigInt = BigDecimal.valueOf(val).divide(divisor, MathContext.DECIMAL128)
+                        .toBigInteger().multiply(divisor.toBigInteger());
+                val = bigInt.doubleValue();
+            }
+
+            DecimalFormat nf = (DecimalFormat) NumberFormat.getCurrencyInstance(LocaleUtil.getUserLocale());
+            int decimalPlaces = nPlaces < 0 ? 0 : nPlaces;
+            if (LocaleUtil.getUserLocale().getCountry().equalsIgnoreCase("US")) {
+                nf.setNegativePrefix("(" + nf.getDecimalFormatSymbols().getCurrencySymbol());
+                nf.setNegativeSuffix(")");
+            }
+            nf.setMinimumFractionDigits(decimalPlaces);
+            nf.setMaximumFractionDigits(decimalPlaces);
+
+            return new StringEval(nf.format(val).replace("\u00a0"," "));
+        } catch (EvaluationException e) {
             return e.getErrorEval();
         }
     }
 
     public static final Function EXP = oneDouble(d -> Math.pow(Math.E, d));
     public static final Function FACT = oneDouble(MathX::factorial);
+    //https://support.microsoft.com/en-us/office/int-function-a6c4af9e-356d-4369-ab6a-cb1fd9d343ef
     public static final Function INT = oneDouble(d -> Math.round(d-0.5));
     public static final Function LN = oneDouble(Math::log);
     public static final Function LOG10 = oneDouble(d -> Math.log(d) / LOG_10_TO_BASE_e);

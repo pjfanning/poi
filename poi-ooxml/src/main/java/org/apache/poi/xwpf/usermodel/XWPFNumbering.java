@@ -220,14 +220,26 @@ public class XWPFNumbering extends POIXMLDocumentPart {
     public BigInteger addAbstractNum(XWPFAbstractNum abstractNum) {
         int pos = abstractNums.size();
         if (abstractNum.getAbstractNum() != null) { // Use the current CTAbstractNum if it exists
-            ctNumbering.addNewAbstractNum().set(abstractNum.getAbstractNum());
+            CTAbstractNum ctAbstractNum = ctNumbering.addNewAbstractNum();
+            ctAbstractNum.set(abstractNum.getAbstractNum());
+            abstractNum.setCtAbstractNum(ctAbstractNum);
         } else {
             abstractNum.setCtAbstractNum(ctNumbering.addNewAbstractNum());
-            abstractNum.getAbstractNum().setAbstractNumId(BigInteger.valueOf(pos));
+            BigInteger id = findNextAbstractNumberingId();
+            abstractNum.getAbstractNum().setAbstractNumId(id);
             ctNumbering.setAbstractNumArray(pos, abstractNum.getAbstractNum());
+            abstractNum.setCtAbstractNum(ctNumbering.getAbstractNumArray(pos));
         }
         abstractNums.add(abstractNum);
         return abstractNum.getCTAbstractNum().getAbstractNumId();
+    }
+
+    private BigInteger findNextAbstractNumberingId() {
+        long maxId = 0;
+        for (XWPFAbstractNum num : abstractNums) {
+            maxId = Math.max(maxId, num.getAbstractNum().getAbstractNumId().longValue());
+        }
+        return BigInteger.valueOf(maxId + 1);
     }
 
     /**
@@ -240,8 +252,16 @@ public class XWPFNumbering extends POIXMLDocumentPart {
         for (XWPFAbstractNum abstractNum : abstractNums) {
             BigInteger foundNumId = abstractNum.getAbstractNum().getAbstractNumId();
             if(abstractNumID.equals(foundNumId)) {
-                ctNumbering.removeAbstractNum(foundNumId.byteValue());
                 abstractNums.remove(abstractNum);
+                break;
+            }
+        }
+
+        for (int i = 0; i < ctNumbering.sizeOfAbstractNumArray(); i++) {
+            CTAbstractNum ctAbstractNum = ctNumbering.getAbstractNumArray(i);
+            BigInteger foundNumId = ctAbstractNum.getAbstractNumId();
+            if(abstractNumID.equals(foundNumId)) {
+                ctNumbering.removeAbstractNum(i);
                 return true;
             }
         }

@@ -100,12 +100,12 @@ final class TestIOUtils {
     }
 
     @Test
-    void testToByteArrayToSmall() {
+    void testToByteArrayTooSmall() {
         assertThrows(IOException.class, () -> IOUtils.toByteArray(data123(), 10));
     }
 
     @Test
-    void testToByteArrayMaxLengthToSmall() {
+    void testToByteArrayMaxLengthTooSmall() {
         assertThrows(IOException.class, () -> IOUtils.toByteArray(data123(), 10, 10));
     }
 
@@ -141,6 +141,74 @@ final class TestIOUtils {
     void testToByteArrayByteBufferToSmall() {
         assertArrayEquals(new byte[] { 1, 2, 3, 4, 5, 6, 7},
                 IOUtils.toByteArray(ByteBuffer.wrap(new byte[]{1, 2, 3, 4, 5, 6, 7}), 3));
+    }
+
+    @Test
+    void testToByteArrayMaxLength() throws IOException {
+        final byte[] array = new byte[]{1, 2, 3, 4, 5, 6, 7};
+        try (ByteArrayInputStream is = new ByteArrayInputStream(array)) {
+            assertArrayEquals(array, IOUtils.toByteArrayWithMaxLength(is, 7));
+        }
+    }
+
+    @Test
+    void testToByteArrayMaxLengthWithByteArrayInitLenShort() throws IOException {
+        final byte[] array = new byte[]{1, 2, 3, 4, 5, 6, 7};
+        IOUtils.setMaxByteArrayInitSize(2);
+        try (ByteArrayInputStream is = new ByteArrayInputStream(array)) {
+            assertEquals(2, IOUtils.getMaxByteArrayInitSize());
+            assertArrayEquals(array, IOUtils.toByteArrayWithMaxLength(is, 7));
+        } finally {
+            IOUtils.setMaxByteArrayInitSize(-1);
+        }
+    }
+
+    @Test
+    void testToByteArrayMaxLengthWithByteArrayInitLenLong() throws IOException {
+        final byte[] array = new byte[]{1, 2, 3, 4, 5, 6, 7};
+        IOUtils.setMaxByteArrayInitSize(8192);
+        try (ByteArrayInputStream is = new ByteArrayInputStream(array)) {
+            assertEquals(8192, IOUtils.getMaxByteArrayInitSize());
+            assertArrayEquals(array, IOUtils.toByteArrayWithMaxLength(is, 7));
+        } finally {
+            IOUtils.setMaxByteArrayInitSize(-1);
+        }
+    }
+
+    @Test
+    void testToByteArrayMaxLengthLongerThanArray() throws IOException {
+        final byte[] array = new byte[]{1, 2, 3, 4, 5, 6, 7};
+        try (ByteArrayInputStream is = new ByteArrayInputStream(array)) {
+            assertArrayEquals(array, IOUtils.toByteArrayWithMaxLength(is, 8));
+        }
+    }
+
+    @Test
+    void testToByteArrayMaxLengthShorterThanArray() throws IOException {
+        final byte[] array = new byte[]{1, 2, 3, 4, 5, 6, 7};
+        try (ByteArrayInputStream is = new ByteArrayInputStream(array)) {
+            assertThrows(RecordFormatException.class, () -> IOUtils.toByteArrayWithMaxLength(is, 3));
+        }
+    }
+
+    @Test
+    void testToByteArrayMaxLengthShorterThanArrayWithByteArrayOverride() throws IOException {
+        final byte[] array = new byte[]{1, 2, 3, 4, 5, 6, 7};
+        IOUtils.setByteArrayMaxOverride(30 * 1024 * 1024);
+        try (ByteArrayInputStream is = new ByteArrayInputStream(array)) {
+            assertArrayEquals(array, IOUtils.toByteArrayWithMaxLength(is, 3));
+        } finally {
+            IOUtils.setByteArrayMaxOverride(-1);
+        }
+    }
+
+    @Test
+    void testCalculateByteArrayInitLength() throws IOException {
+        assertEquals(4096, IOUtils.calculateByteArrayInitLength(false, 6000, 10000));
+        assertEquals(3000, IOUtils.calculateByteArrayInitLength(false, 3000, 10000));
+        assertEquals(3000, IOUtils.calculateByteArrayInitLength(false, 10000, 3000));
+        assertEquals(10000, IOUtils.calculateByteArrayInitLength(true, 10000, 12000));
+        assertEquals(10000, IOUtils.calculateByteArrayInitLength(true, 12000, 10000));
     }
 
     @Test
@@ -181,7 +249,7 @@ final class TestIOUtils {
 
     @Test
     void testCopyToFile() throws IOException {
-        File dest = File.createTempFile("poi-ioutils-", "");
+        File dest = TempFile.createTempFile("poi-ioutils-", "");
         try {
             try (InputStream is = new FileInputStream(TMP)) {
                 assertEquals(LENGTH, IOUtils.copy(is, dest));

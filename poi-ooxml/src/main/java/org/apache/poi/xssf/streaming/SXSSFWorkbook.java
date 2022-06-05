@@ -50,6 +50,7 @@ import org.apache.poi.openxml4j.util.ZipSecureFile;
 import org.apache.poi.ss.SpreadsheetVersion;
 import org.apache.poi.ss.formula.EvaluationWorkbook;
 import org.apache.poi.ss.formula.udf.UDFFinder;
+import org.apache.poi.ss.usermodel.CellReferenceType;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.DataFormat;
@@ -1350,9 +1351,18 @@ public class SXSSFWorkbook implements Workbook {
         return _wb.addOlePackage(oleData, label, fileName, command);
     }
 
-
     @Override
     public EvaluationWorkbook createEvaluationWorkbook() {
         return SXSSFEvaluationWorkbook.create(this);
+    }
+
+    @Override
+    public CellReferenceType getCellReferenceType() {
+        return getXSSFWorkbook().getCellReferenceType();
+    }
+
+    @Override
+    public void setCellReferenceType(CellReferenceType cellReferenceType) {
+        getXSSFWorkbook().setCellReferenceType(cellReferenceType);
     }
 }

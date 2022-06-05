@@ -22,7 +22,7 @@ final String BEANS_RES = "${buildDir}/generated-resources"
 
 sourceSets {
     main {
-        if (JavaVersion.current() != JavaVersion.VERSION_1_8) {
+        if (jdkVersion > 8) {
             output.dir(JAVA9_OUT, builtBy: 'cacheJava9')
         }
         compileClasspath += files(BEANS_RES)
@@ -38,17 +38,14 @@ sourceSets {
 dependencies {
     api "org.apache.xmlbeans:xmlbeans:${xmlbeansVersion}"
     compileOnly project(':poi-ooxml-full')
-    compileOnly project(path:':poi-integration', configuration:'tests')
 }
 
 final MODULE_NAME = 'org.apache.poi.ooxml.schemas'
 final Pattern MODULE_REGEX = ~'\\.jar$'
 final List MAIN_MODULE_PATH = sourceSets.main.runtimeClasspath.findAll{ it.path =~ MODULE_REGEX }.collect{ it.parent }.unique()
-final String OOXML_LITE_REPORT = '../build/ooxml-lite-report'
+final String OOXML_LITE_REPORT = '../src/resources/ooxml-lite-report'
 
 task generateModuleInfo() {
-    dependsOn ':poi-ooxml:build', ':poi-integration:build', ':poi-excelant:build'
-
     File fileIn = file("${OOXML_LITE_REPORT}.clazz")
     File fileOut = file("src/main/java9/module-info.java")
 
@@ -71,7 +68,7 @@ task generateModuleInfo() {
 }
 
 task compileOoxmlLite(type: Copy) {
-    dependsOn 'generateModuleInfo'
+    dependsOn 'generateModuleInfo', ':poi-ooxml-full:generate_beans'
 
     // This task is currently always executed, because gradle thinks files with two dollar signs
     // (as in AlternateContentDocument$AlternateContent$Choice.class) are always stale
@@ -87,17 +84,26 @@ task compileOoxmlLite(type: Copy) {
 
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(jdkVersion))
+        if (jdkVendor != '') vendor.set(JvmVendorSpec.matching(jdkVendor))
+    }
+}
+
+compileJava {
+    dependsOn 'compileOoxmlLite'
+    options.fork = true
+    options.forkOptions.jvmArgs << '-Xmx2G'
 }
 
 processResources.dependsOn 'compileOoxmlLite'
-compileJava.dependsOn 'compileOoxmlLite'
 sourcesJar.dependsOn 'compileOoxmlLite'
 
 task compileJava9(type: JavaCompile, dependsOn: 'compileJava') {
-    sourceCompatibility = 9
-    targetCompatibility = 9
+    javaCompiler = javaToolchains.compilerFor {
+        languageVersion = JavaLanguageVersion.of(jdkVersion)
+        if (jdkVendor != '') vendor = JvmVendorSpec.matching(jdkVendor)
+    }
     destinationDirectory = file(JAVA9_OUT + VERSIONS9)
     source = file(JAVA9_SRC)
     classpath = files()
@@ -107,6 +113,10 @@ task compileJava9(type: JavaCompile, dependsOn: 'compileJava') {
             '--module-path', files(MAIN_MODULE_PATH).asPath
         ]
     }
+
+    onlyIf {
+        jdkVersion > 8
+    }
 }
 
 task cacheJava9(type: Copy, dependsOn: 'compileJava9') {
@@ -115,8 +125,6 @@ task cacheJava9(type: Copy, dependsOn: 'compileJava9') {
 }
 
 jar {
-    dependsOn ':poi-ooxml:test', ':poi-integration:test'
-
     destinationDirectory = file("../build/dist/maven/${project.archivesBaseName}")
 
     doFirst {
@@ -133,7 +141,7 @@ jar {
         }
     }
 
-    if (JavaVersion.current() == JavaVersion.VERSION_1_8) {
+    if (jdkVersion == 8) {
         into('META-INF/versions/9') {
             from JAVA9_SRC include '*.class'
         }

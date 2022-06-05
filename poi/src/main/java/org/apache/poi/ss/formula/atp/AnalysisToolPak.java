@@ -68,17 +68,19 @@ public final class AnalysisToolPak implements UDFFinder {
         r(m, "ACCRINTM", null);
         r(m, "AMORDEGRC", null);
         r(m, "AMORLINC", null);
-        r(m, "AVERAGEIF", null);
+        r(m, "AVERAGEIF", AverageIf.instance);
         r(m, "AVERAGEIFS", Averageifs.instance);
         r(m, "BAHTTEXT", null);
         r(m, "BESSELI", null);
-        r(m, "BESSELJ", null);
+        r(m, "BESSELJ", BesselJ.instance);
         r(m, "BESSELK", null);
         r(m, "BESSELY", null);
         r(m, "BIN2DEC", Bin2Dec.instance);
         r(m, "BIN2HEX", null);
         r(m, "BIN2OCT", null);
         r(m, "COMPLEX", Complex.instance);
+        r(m, "CEILING.MATH", CeilingMath.instance);
+        r(m, "CEILING.PRECISE", CeilingPrecise.instance);
         r(m, "CONCAT", TextFunction.CONCAT);
         r(m, "CONVERT", null);
         r(m, "COUNTIFS", Countifs.instance);
@@ -97,13 +99,14 @@ public final class AnalysisToolPak implements UDFFinder {
         r(m, "CUBEVALUE", null);
         r(m, "CUMIPMT", null);
         r(m, "CUMPRINC", null);
+        r(m, "DAYS", Days.instance);
         r(m, "DEC2BIN", Dec2Bin.instance);
         r(m, "DEC2HEX", Dec2Hex.instance);
         r(m, "DEC2OCT", null);
         r(m, "DELTA", Delta.instance);
         r(m, "DISC", null);
-        r(m, "DOLLARDE", null);
-        r(m, "DOLLARFR", null);
+        r(m, "DOLLARDE", DollarDe.instance);
+        r(m, "DOLLARFR", DollarFr.instance);
         r(m, "DURATION", null);
         r(m, "EDATE", EDate.instance);
         r(m, "EFFECT", null);
@@ -111,8 +114,10 @@ public final class AnalysisToolPak implements UDFFinder {
         r(m, "ERF", null);
         r(m, "ERFC", null);
         r(m, "FACTDOUBLE", FactDouble.instance);
+        r(m, "FLOOR.MATH", FloorMath.instance);
+        r(m, "FLOOR.PRECISE", FloorPrecise.instance);
         r(m, "FVSCHEDULE", null);
-        r(m, "GCD", null);
+        r(m, "GCD", Gcd.instance);
         r(m, "GESTEP", null);
         r(m, "HEX2BIN", null);
         r(m, "HEX2DEC", Hex2Dec.instance);
@@ -141,7 +146,7 @@ public final class AnalysisToolPak implements UDFFinder {
         r(m, "ISEVEN", ParityFunction.IS_EVEN);
         r(m, "ISODD", ParityFunction.IS_ODD);
         r(m, "JIS", null);
-        r(m, "LCM", null);
+        r(m, "LCM", Lcm.instance);
         r(m, "MAXIFS", Maxifs.instance);
         r(m, "MDURATION", null);
         r(m, "MINIFS", Minifs.instance);
@@ -149,6 +154,11 @@ public final class AnalysisToolPak implements UDFFinder {
         r(m, "MULTINOMIAL", null);
         r(m, "NETWORKDAYS", NetworkdaysFunction.instance);
         r(m, "NOMINAL", null);
+        r(m, "NORM.DIST", NormDist.instance);
+        r(m, "NORM.S.DIST", NormSDist.instance);
+        r(m, "NORM.INV", NormInv.instance);
+        r(m, "NORM.S.INV", NormSInv.instance);
+        r(m, "NUMBERVALUE", NumberValueFunction.instance);
         r(m, "OCT2BIN", null);
         r(m, "OCT2DEC", Oct2Dec.instance);
         r(m, "OCT2HEX", null);
@@ -156,9 +166,10 @@ public final class AnalysisToolPak implements UDFFinder {
         r(m, "ODDFYIELD", null);
         r(m, "ODDLPRICE", null);
         r(m, "ODDLYIELD", null);
-        r(m, "PRICE", null);
         r(m, "PERCENTRANK.EXC", PercentRankExcFunction.instance);
         r(m, "PERCENTRANK.INC", PercentRankIncFunction.instance);
+        r(m, "POISSON.DIST", Poisson.instance);
+        r(m, "PRICE", null);
         r(m, "PRICEDISC", null);
         r(m, "PRICEMAT", null);
         r(m, "QUOTIENT", Quotient.instance);
@@ -167,7 +178,9 @@ public final class AnalysisToolPak implements UDFFinder {
         r(m, "RTD", null);
         r(m, "SERIESSUM", null);
         r(m, "SINGLE", Single.instance);
-        r(m, "SQRTPI", null);
+        r(m, "SQRTPI", Sqrtpi.instance);
+        r(m, "STDEV.S", Stdevs.instance);
+        r(m, "STDEV.P", Stdevp.instance);
         r(m, "SUMIFS", Sumifs.instance);
         r(m, "SWITCH", Switch.instance);
         r(m, "TBILLEQ", null);
@@ -179,6 +192,7 @@ public final class AnalysisToolPak implements UDFFinder {
         r(m, "TEXTJOIN", TextJoinFunction.instance);
         r(m, "WEEKNUM", WeekNum.instance);
         r(m, "WORKDAY", WorkdayFunction.instance);
+        r(m, "WORKDAY.INTL", WorkdayIntlFunction.instance);
         r(m, "XIRR", null);
         r(m, "XLOOKUP", XLookupFunction.instance);
         r(m, "XMATCH", XMatchFunction.instance);
@@ -187,6 +201,8 @@ public final class AnalysisToolPak implements UDFFinder {
         r(m, "YIELD", null);
         r(m, "YIELDDISC", null);
         r(m, "YIELDMAT", null);
+        r(m, "VAR.S", Vars.instance);
+        r(m, "VAR.P", Varp.instance);
 
         return m;
     }

@@ -25,12 +25,14 @@ import org.apache.poi.hssf.usermodel.HSSFName;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.formula.OperationEvaluationContext;
 import org.apache.poi.ss.formula.eval.ErrorEval;
 import org.apache.poi.ss.formula.eval.ValueEval;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.CellValue;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
+import org.apache.poi.ss.util.CellReference;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -105,10 +107,12 @@ final class TestIndirect {
 
         // non-error cases
         confirm(feA, c, "INDIRECT(\"C2\")", 23);
+        confirm(feA, c, "INDIRECT(\"c2\")", 23);
         confirm(feA, c, "INDIRECT(\"C2\", TRUE)", 23);
         confirm(feA, c, "INDIRECT(\"$C2\")", 23);
         confirm(feA, c, "INDIRECT(\"C$2\")", 23);
         confirm(feA, c, "SUM(INDIRECT(\"Sheet2!B1:C3\"))", 351); // area ref
+        confirm(feA, c, "SUM(INDIRECT(\"Sheet2!b1:c3\"))", 351); // area ref
         confirm(feA, c, "SUM(INDIRECT(\"Sheet2! B1 : C3 \"))", 351); // spaces in area ref
         confirm(feA, c, "SUM(INDIRECT(\"'John''s sales'!A1:C1\"))", 93); // special chars in sheet name
         confirm(feA, c, "INDIRECT(\"'Sheet1'!B3\")", 32); // redundant sheet name quotes
@@ -122,7 +126,11 @@ final class TestIndirect {
         confirm(feA, c, "SUM(INDIRECT(A4))", 50); // indirect defined name
         confirm(feA, c, "SUM(INDIRECT(B4))", 351); // indirect defined name pointinh to other sheet
 
+
         // simple error propagation:
+
+        confirm(feA, c, "INDIRECT(\"C\")", ErrorEval.REF_INVALID);
+        confirm(feA, c, "INDIRECT(\"4\")", ErrorEval.REF_INVALID);
 
         // arg0 is evaluated to text first
         confirm(feA, c, "INDIRECT(#DIV/0!)", ErrorEval.DIV_ZERO);
@@ -155,6 +163,61 @@ final class TestIndirect {
     }
 
     @Test
+    void testBasicR1C1() throws Exception {
+        try (HSSFWorkbook wbA = createWBA()) {
+            HSSFCell c = wbA.getSheetAt(0).createRow(5).createCell(2);
+            HSSFFormulaEvaluator feA = new HSSFFormulaEvaluator(wbA);
+
+            // non-error cases
+            confirm(feA, c, "INDIRECT(\"R1C1\", FALSE)", 11);
+            confirm(feA, c, "INDIRECT(\"R1C4\", FALSE)", 14);
+            confirm(feA, c, "INDIRECT(\"R2C3\", FALSE)", 23);
+            confirm(feA, c, "INDIRECT(\"r2c3\", FALSE)", 23);
+            confirm(feA, c, "INDIRECT(\"R[-4]C[0]\", FALSE)", 23);
+            confirm(feA, c, "INDIRECT(\"R[-4]C\", FALSE)", 23);
+            confirm(feA, c, "INDIRECT(\"R1C1:R1C7\", FALSE)", 13); // de-reference area ref (note formula is in C4)
+            confirm(feA, c, "INDIRECT(\"r1c1:r1c7\", FALSE)", 13); // de-reference area ref (note formula is in C4)
+            confirm(feA, c, "SUM(INDIRECT(\"Sheet2!R1C2:R3C3\", FALSE))", 351); // area ref
+            confirm(feA, c, "SUM(INDIRECT(\"Sheet2!r1c2:r3c3\", FALSE))", 351); // area ref
+            confirm(feA, c, "SUM(INDIRECT(\"Sheet2! R1C2 : R3C3 \", FALSE))", 351); // spaces in area ref
+
+            // simple error propagation:
+
+            confirm(feA, c, "INDIRECT(\"'Sheet1 '!R3C4\", FALSE)", ErrorEval.REF_INVALID);
+            confirm(feA, c, "INDIRECT(\"R2CX\", FALSE)", ErrorEval.REF_INVALID);
+        }
+    }
+
+    @Test
+    void testR1C1FullColumn() throws Exception {
+        try (HSSFWorkbook wbA = createWBA()) {
+            HSSFCell c = wbA.getSheetAt(0).getRow(0).createCell(20);
+            HSSFFormulaEvaluator feA = new HSSFFormulaEvaluator(wbA);
+            confirm(feA, c, "INDIRECT(\"C[-17]\", FALSE)", 14.0);
+            confirm(feA, c, "INDIRECT(\"C4\", FALSE)", 14.0);
+            confirm(feA, c, "INDIRECT(\"c4\", FALSE)", 14.0);
+            confirm(feA, c, "INDIRECT(\"Sheet1!C4\", FALSE)", 14.0);
+            confirm(feA, c, "INDIRECT(\"CX\", FALSE)", ErrorEval.REF_INVALID);
+        }
+    }
+
+    @Test
+    void testR1C1FullRow() throws Exception {
+        try (HSSFWorkbook wbA = createWBA()) {
+            HSSFRow row = wbA.getSheetAt(0).createRow(100);
+            HSSFCell c0 = row.createCell(0);
+            HSSFCell c1 = row.createCell(1);
+            HSSFFormulaEvaluator feA = new HSSFFormulaEvaluator(wbA);
+            confirm(feA, c0, "INDIRECT(\"R[-100]\", FALSE)", 11.0);
+            confirm(feA, c0, "INDIRECT(\"R1\", FALSE)", 11.0);
+            confirm(feA, c0, "INDIRECT(\"r1\", FALSE)", 11.0);
+            confirm(feA, c0, "INDIRECT(\"Sheet1!R1\", FALSE)", 11.0);
+            //assertEquals(12.0, c1.getNumericCellValue());
+            confirm(feA, c0, "INDIRECT(\"RX\", FALSE)", ErrorEval.REF_INVALID);
+        }
+    }
+
+    @Test
     void testMultipleWorkbooks() throws Exception {
         HSSFWorkbook wbA = createWBA();
         HSSFCell cellA = wbA.getSheetAt(0).createRow(10).createCell(0);
@@ -179,6 +242,22 @@ final class TestIndirect {
         wbA.close();
     }
 
+    @Test
+    void testInvalidInput() {
+        assertEquals(ErrorEval.VALUE_INVALID, Indirect.instance.evaluate(new ValueEval[] {}, null));
+    }
+
+    @Test
+    void testRelativeR1C1() {
+        CellReference cr = new CellReference("C3");
+        assertEquals(new CellReference("A3"), OperationEvaluationContext.applyR1C1Reference(cr, "RC[-2]"));
+        assertEquals(new CellReference("E3"), OperationEvaluationContext.applyR1C1Reference(cr, "RC[2]"));
+        assertEquals(new CellReference("C2"), OperationEvaluationContext.applyR1C1Reference(cr, "R[-1]C"));
+        assertEquals(new CellReference("C4"), OperationEvaluationContext.applyR1C1Reference(cr, "R[1]C"));
+        assertEquals(new CellReference("D4"), OperationEvaluationContext.applyR1C1Reference(cr, "R[1]C[1]"));
+        assertEquals(new CellReference("A1"), OperationEvaluationContext.applyR1C1Reference(cr, "R1C1"));
+    }
+
     private static void confirm(FormulaEvaluator fe, Cell cell, String formula, double expectedResult) {
         fe.clearAllCachedResultValues();
         cell.setCellFormula(formula);
@@ -194,10 +273,5 @@ final class TestIndirect {
         assertEquals(CellType.ERROR, cv.getCellType(), "expected error cell type but got " + cv.formatAsString());
         int expCode = expectedResult.getErrorCode();
         assertEquals(expCode, cv.getErrorValue(), "Expected error '" + ErrorEval.getText(expCode) + "' but got '" + cv.formatAsString() + "'.");
-    }
-
-    @Test
-    void testInvalidInput() {
-        assertEquals(ErrorEval.VALUE_INVALID, Indirect.instance.evaluate(new ValueEval[] {}, null));
     }
 }

@@ -19,11 +19,12 @@ package org.apache.poi.hslf.blip;
 
 import java.awt.Dimension;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 import javax.imageio.ImageIO;
 
+import org.apache.commons.io.input.UnsynchronizedByteArrayInputStream;
 import org.apache.poi.ddf.EscherBSERecord;
 import org.apache.poi.ddf.EscherContainerRecord;
 import org.apache.poi.hslf.usermodel.HSLFPictureData;
@@ -40,7 +41,7 @@ import org.apache.poi.util.Units;
 public abstract class Bitmap extends HSLFPictureData {
 
     /**
-     * @deprecated Use {@link HSLFSlideShow#addPicture(byte[], PictureType)} or one of its overloads to create new
+     * @deprecated Use {@link HSLFSlideShow#addPicture(byte[], org.apache.poi.sl.usermodel.PictureData.PictureType)} or one of its overloads to create new
      *             {@link Bitmap}. This API led to detached {@link Bitmap} instances (See Bugzilla
      *             46122) and prevented adding additional functionality.
      */
@@ -90,8 +91,8 @@ public abstract class Bitmap extends HSLFPictureData {
 
     @Override
     public Dimension getImageDimension() {
-        try {
-            BufferedImage bi = ImageIO.read(new ByteArrayInputStream(getData()));
+        try (InputStream is = new UnsynchronizedByteArrayInputStream(getData())){
+            BufferedImage bi = ImageIO.read(is);
             return new Dimension(
                 (int)Units.pixelToPoints(bi.getWidth()),
                 (int)Units.pixelToPoints(bi.getHeight())

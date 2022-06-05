@@ -37,7 +37,11 @@ public interface PackageRelationshipTypes {
     String CORE_PROPERTIES = "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties";
 
     /**
-     * Core properties relationship type as defiend in ECMA 376.
+     * Core properties relationship type as defined in ECMA 376.
+     * <p>
+     * See 2.1.33 Part 1 Section 15.2.11.1, Core File Properties Part in [MS-OE376].pdf.
+     * The case of 'officedocument' matches what appears in the pdf.
+     * </p>
      */
     String CORE_PROPERTIES_ECMA376 = "http://schemas.openxmlformats.org/officedocument/2006/relationships/metadata/core-properties";
 

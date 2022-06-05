@@ -41,8 +41,7 @@ import org.apache.poi.util.LocaleUtil;
  * Contains methods for dealing with Excel dates.
  */
 public class DateUtil {
-    // FIXME this should be changed to private and the class marked final once HSSFDateUtil can be removed
-    protected DateUtil() {
+    private DateUtil() {
         // no instances of this class
     }
 
@@ -92,7 +91,7 @@ public class DateUtil {
      */
     public static LocalDateTime toLocalDateTime(Date date) {
         return date.toInstant()
-                .atZone(TimeZone.getTimeZone("UTC").toZoneId()) // java.util.Date uses UTC
+                .atZone(LocaleUtil.TIMEZONE_UTC.toZoneId()) // java.util.Date uses UTC
                 .toLocalDateTime();
     }
 
@@ -103,7 +102,7 @@ public class DateUtil {
      */
     public static LocalDateTime toLocalDateTime(Calendar date) {
         return date.toInstant()
-                .atZone(TimeZone.getTimeZone("UTC").toZoneId()) // java.util.Date uses UTC
+                .atZone(LocaleUtil.TIMEZONE_UTC.toZoneId()) // java.util.Date uses UTC
                 .toLocalDateTime();
     }
 

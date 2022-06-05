@@ -61,6 +61,7 @@ import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.apache.poi.ss.formula.ptg.Area3DPtg;
 import org.apache.poi.ss.usermodel.BaseTestWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellReferenceType;
 import org.apache.poi.ss.usermodel.ConditionalFormatting;
 import org.apache.poi.ss.usermodel.ConditionalFormattingRule;
 import org.apache.poi.ss.usermodel.Name;
@@ -1175,6 +1176,40 @@ public final class TestHSSFWorkbook extends BaseTestWorkbook {
         // Read and check
         try (HSSFWorkbook wb = new HSSFWorkbook(new POIFSFileSystem(file))) {
             assertEquals(3, wb.getNumberOfSheets());
+        }
+    }
+
+    @Test
+    void checkExistingFileForR1C1Refs() throws IOException {
+        try (
+                UnsynchronizedByteArrayOutputStream bos = new UnsynchronizedByteArrayOutputStream();
+                HSSFWorkbook wb = openSampleWorkbook("49423.xls")
+        ) {
+            assertEquals(CellReferenceType.A1, wb.getCellReferenceType());
+            wb.setCellReferenceType(CellReferenceType.R1C1);
+            assertEquals(CellReferenceType.R1C1, wb.getCellReferenceType());
+            wb.write(bos);
+            try (HSSFWorkbook wb2 = new HSSFWorkbook(bos.toInputStream())) {
+                assertEquals(CellReferenceType.R1C1, wb2.getCellReferenceType());
+            }
+        }
+    }
+
+    @Test
+    void checkNewFileForR1C1Refs() throws IOException {
+        try (
+                UnsynchronizedByteArrayOutputStream bos = new UnsynchronizedByteArrayOutputStream();
+                HSSFWorkbook wb = new HSSFWorkbook()
+        ) {
+            assertEquals(CellReferenceType.UNKNOWN, wb.getCellReferenceType());
+            HSSFSheet sheet = wb.createSheet();
+            assertEquals(CellReferenceType.A1, wb.getCellReferenceType());
+            wb.setCellReferenceType(CellReferenceType.R1C1);
+            assertEquals(CellReferenceType.R1C1, wb.getCellReferenceType());
+            wb.write(bos);
+            try (HSSFWorkbook wb2 = new HSSFWorkbook(bos.toInputStream())) {
+                assertEquals(CellReferenceType.R1C1, wb2.getCellReferenceType());
+            }
         }
     }
 

@@ -17,25 +17,19 @@
 
 package org.apache.poi.ss.formula.functions;
 
+import org.apache.commons.math3.distribution.PoissonDistribution;
+import org.apache.poi.ss.formula.OperationEvaluationContext;
 import org.apache.poi.ss.formula.eval.BoolEval;
 import org.apache.poi.ss.formula.eval.ErrorEval;
 import org.apache.poi.ss.formula.eval.EvaluationException;
 import org.apache.poi.ss.formula.eval.NumberEval;
 import org.apache.poi.ss.formula.eval.ValueEval;
 
-public class Poisson {
+public class Poisson implements FreeRefFunction {
 
-    private static final double DEFAULT_RETURN_RESULT =1;
+    public static final Poisson instance = new Poisson();
 
-    /** All long-representable factorials */
-    private static final long[] FACTORIALS = {
-        1L,                  1L,                   2L,
-        6L,                 24L,                 120L,
-        720L,               5040L,               40320L,
-        362880L,            3628800L,            39916800L,
-        479001600L,         6227020800L,         87178291200L,
-        1307674368000L,     20922789888000L,     355687428096000L,
-        6402373705728000L, 121645100408832000L, 2432902008176640000L };
+    private static final double DEFAULT_RETURN_RESULT = 1;
 
     /**
      * This checks is x = 0 and the mean = 0.
@@ -58,23 +52,9 @@ public class Poisson {
         }
     }
 
-    private static double probability(int k, double lambda) {
-        return Math.pow(lambda, k) * Math.exp(-lambda) / factorial(k);
-    }
-
-    private static double cumulativeProbability(int x, double lambda) {
-        double result = 0;
-        for(int k = 0; k <= x; k++){
-            result += probability(k, lambda);
-        }
-        return result;
-    }
-
-    private static long factorial(final int n) {
-        if (n < 0 || n > 20) {
-            throw new IllegalArgumentException("Valid argument should be in the range [0..20]");
-        }
-        return FACTORIALS[n];
+    @Override
+    public ValueEval evaluate(ValueEval[] args, OperationEvaluationContext ec) {
+        return evaluate(args, ec.getRowIndex(), ec.getColumnIndex());
     }
 
     public static ValueEval evaluate(ValueEval[] args, int srcRowIndex, int srcColumnIndex) {
@@ -87,7 +67,12 @@ public class Poisson {
 
         try {
             // arguments/result for this function
-            double x = NumericFunction.singleOperandEvaluate(arg0, srcRowIndex, srcColumnIndex);
+            double x;
+            try {
+                x = NumericFunction.singleOperandEvaluate(arg0, srcRowIndex, srcColumnIndex);
+            } catch (EvaluationException ee) {
+                return ErrorEval.VALUE_INVALID;
+            }
             double mean = NumericFunction.singleOperandEvaluate(arg1, srcRowIndex, srcColumnIndex);
 
             // check for default result : excel implementation for 0,0
@@ -101,7 +86,10 @@ public class Poisson {
 
             // truncate x : as per excel function def
             boolean cumulative = ((BoolEval)arg2).getBooleanValue();
-            double result = cumulative ? cumulativeProbability((int) x, mean) : probability((int) x, mean);
+            PoissonDistribution poissonDistribution = new PoissonDistribution(mean);
+            double result = cumulative ?
+                    poissonDistribution.cumulativeProbability((int) x) :
+                    poissonDistribution.probability((int) x);
 
             // check the result
             NumericFunction.checkValue(result);

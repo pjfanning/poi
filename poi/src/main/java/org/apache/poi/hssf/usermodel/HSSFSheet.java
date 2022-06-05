@@ -476,10 +476,10 @@ public final class HSSFSheet implements Sheet {
     }
 
     /**
-     * Get the visibility state for a given column.
+     * Set the visibility state for a given column.
      *
      * @param columnIndex - the column to get (0-based)
-     * @param hidden      - the visiblity state of the column
+     * @param hidden      - the visibility state of the column
      */
     @Override
     public void setColumnHidden(int columnIndex, boolean hidden) {
@@ -1490,6 +1490,7 @@ public final class HSSFSheet implements Sheet {
      * @param isRow unused, kept for backwards compatibility
      * @deprecated POI 3.15 beta 2. Use {@link HSSFRowShifter#shiftMergedRegions(int, int, int)}.
      */
+    @Deprecated
     protected void shiftMerged(int startRow, int endRow, int n, boolean isRow) {
         RowShifter rowShifter = new HSSFRowShifter(this);
         rowShifter.shiftMergedRegions(startRow, endRow, n);
@@ -2516,12 +2517,12 @@ public final class HSSFSheet implements Sheet {
 
     @Override
     public CellRangeAddress getRepeatingRows() {
-        return getRepeatingRowsOrColums(true);
+        return getRepeatingRowsOrColumns(true);
     }
 
     @Override
     public CellRangeAddress getRepeatingColumns() {
-        return getRepeatingRowsOrColums(false);
+        return getRepeatingRowsOrColumns(false);
     }
 
     @Override
@@ -2615,7 +2616,7 @@ public final class HSSFSheet implements Sheet {
     }
 
 
-    private CellRangeAddress getRepeatingRowsOrColums(boolean rows) {
+    private CellRangeAddress getRepeatingRowsOrColumns(boolean rows) {
         NameRecord rec = getBuiltinNameRecord(NameRecord.BUILTIN_PRINT_TITLE);
         if (rec == null) {
             return null;

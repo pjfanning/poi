@@ -117,8 +117,9 @@ public final class XSSFCell extends CellBase {
     protected XSSFCell(XSSFRow row, CTCell cell) {
         _cell = cell;
         _row = row;
-        if (cell.getR() != null) {
-            _cellNum = new CellReference(cell.getR()).getCol();
+        String rval = cell.getR();
+        if (rval != null) {
+            _cellNum = new CellReference(rval).getCol();
         } else {
             int prevNum = row.getLastCellNum();
             if(prevNum != -1){
@@ -296,7 +297,8 @@ public final class XSSFCell extends CellBase {
                 rt = new XSSFRichTextString("");
                 break;
             case STRING:
-                if (_cell.getT() == STCellType.INLINE_STR) {
+                STCellType.Enum xmlbeanCellType = _cell.getT();
+                if (xmlbeanCellType == STCellType.INLINE_STR) {
                     if(_cell.isSetIs()) {
                         //string is expressed directly in the cell definition instead of implementing the shared string table.
                         rt = new XSSFRichTextString(_cell.getIs());
@@ -306,7 +308,7 @@ public final class XSSFCell extends CellBase {
                     } else {
                         rt = new XSSFRichTextString("");
                     }
-                } else if (_cell.getT() == STCellType.STR) {
+                } else if (xmlbeanCellType == STCellType.STR) {
                     //cached formula value
                     rt = new XSSFRichTextString(_cell.isSetV() ? _cell.getV() : "");
                 } else {

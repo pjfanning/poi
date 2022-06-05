@@ -38,11 +38,13 @@ import java.util.Arrays;
 
 import org.apache.commons.io.output.UnsynchronizedByteArrayOutputStream;
 import org.apache.poi.POIDataSamples;
+import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.openxml4j.opc.PackageAccess;
 import org.apache.poi.ss.tests.usermodel.BaseTestXWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.Hyperlink;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -51,6 +53,13 @@ import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.xssf.SXSSFITestDataProvider;
 import org.apache.poi.xssf.XSSFTestDataSamples;
 import org.apache.poi.xssf.model.SharedStringsTable;
+import org.apache.poi.xssf.usermodel.DefaultIndexedColorMap;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFColor;
+import org.apache.poi.xssf.usermodel.XSSFFont;
+import org.apache.poi.xssf.usermodel.XSSFHyperlink;
+import org.apache.poi.xssf.usermodel.XSSFRichTextString;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
@@ -152,6 +161,16 @@ public final class TestSXSSFWorkbook extends BaseTestXWorkbook {
                 assertEquals("A", cell.getStringCellValue());
             }
         }
+    }
+
+    @Test
+    void useSharedStringsTableWithRichText() throws Exception {
+        testUseSharedStringsTableWithRichText(false);
+    }
+
+    @Test
+    void useSharedStringsTableWithRichTextAndCompression() throws Exception {
+        testUseSharedStringsTableWithRichText(true);
     }
 
     @Test
@@ -516,8 +535,79 @@ public final class TestSXSSFWorkbook extends BaseTestXWorkbook {
         }
     }
 
+    @Test
+    void addHyperlink() throws Exception {
+        try (
+            SXSSFWorkbook wb = new SXSSFWorkbook();
+            UnsynchronizedByteArrayOutputStream bos = new UnsynchronizedByteArrayOutputStream()
+        ) {
+            SXSSFSheet sheet = wb.createSheet("s1");
+            SXSSFRow row = sheet.createRow(0);
+            SXSSFCell cell = row.createCell(0);
+            cell.setCellValue("Example Website");
+            XSSFHyperlink hyperlink = (XSSFHyperlink)wb.getCreationHelper().createHyperlink(HyperlinkType.URL);
+            hyperlink.setAddress("http://example.com");
+            hyperlink.setCellReference("A1");
+            sheet.addHyperlink(hyperlink);
+            wb.write(bos);
+
+            try (XSSFWorkbook xssfWorkbook = new XSSFWorkbook(bos.toInputStream())) {
+                XSSFSheet xssfSheet = xssfWorkbook.getSheet(sheet.getSheetName());
+                XSSFCell xssfCell = xssfSheet.getRow(0).getCell(0);
+                assertEquals("Example Website", xssfCell.getStringCellValue());
+                XSSFHyperlink xssfHyperlink = xssfCell.getHyperlink();
+                assertEquals(hyperlink.getAddress(), xssfHyperlink.getAddress());
+            }
+        }
+    }
+
     @Override
     @Disabled("not implemented")
     protected void changeSheetNameWithSharedFormulas() {
     }
+
+    private void testUseSharedStringsTableWithRichText(boolean compressTempFiles) throws Exception {
+        try (SXSSFWorkbook wb = new SXSSFWorkbook(null, 10, compressTempFiles, true)) {
+
+            SharedStringsTable sss = wb.getSharedStringSource();
+
+            assertNotNull(sss);
+
+            XSSFFont redFont = new XSSFFont();
+            redFont.setColor(new XSSFColor(new java.awt.Color(241,76,93), new DefaultIndexedColorMap()));
+
+            Row row = wb.createSheet("S1").createRow(0);
+
+            row.createCell(0).setCellValue("A");
+            row.createCell(1).setCellValue("B");
+            XSSFRichTextString rts = new XSSFRichTextString("A");
+            rts.applyFont(redFont);
+            row.createCell(2).setCellValue(rts);
+
+            try (XSSFWorkbook xssfWorkbook = SXSSFITestDataProvider.instance.writeOutAndReadBack(wb)) {
+                sss = wb.getSharedStringSource();
+                assertEquals(3, sss.getUniqueCount());
+                assertTrue(wb.dispose());
+
+                Sheet sheet1 = xssfWorkbook.getSheetAt(0);
+                assertEquals("S1", sheet1.getSheetName());
+                assertEquals(1, sheet1.getPhysicalNumberOfRows());
+                row = sheet1.getRow(0);
+                assertNotNull(row);
+                Cell cell = row.getCell(0);
+                assertNotNull(cell);
+                assertEquals("A", cell.getStringCellValue());
+                cell = row.getCell(1);
+                assertNotNull(cell);
+                assertEquals("B", cell.getStringCellValue());
+                cell = row.getCell(2);
+                assertNotNull(cell);
+                assertEquals("A", cell.getStringCellValue());
+                XSSFRichTextString outputRichTextString = (XSSFRichTextString) cell.getRichStringCellValue();
+                XSSFFont outputFont = outputRichTextString.getFontAtIndex(0);
+                assertEquals(redFont, outputFont);
+            }
+        }
+    }
+
 }

@@ -868,7 +868,7 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet, OoxmlSheetEx
      * Get the actual column width (in units of 1/256th of a character width )
      *
      * <p>
-     * Note, the returned  value is always gerater that {@link #getDefaultColumnWidth()} because the latter does not include margins.
+     * Note, the returned  value is always greater that {@link #getDefaultColumnWidth()} because the latter does not include margins.
      * Actual column width measured as the number of characters of the maximum digit width of the
      * numbers 0, 1, 2, ..., 9 as rendered in the normal style's font. There are 4 pixels of margin
      * padding (two on each side), plus 1 pixel padding for the gridlines.
@@ -926,7 +926,7 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet, OoxmlSheetEx
 
 
     /**
-     * Get the default row height for the sheet measued in point size (if the rows do not define their own height).
+     * Get the default row height for the sheet measured in point size (if the rows do not define their own height).
      *
      * @return  default row height in points
      */
@@ -1600,6 +1600,7 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet, OoxmlSheetEx
     public void groupColumn(int fromColumn, int toColumn) {
         groupColumn1Based(fromColumn+1, toColumn+1);
     }
+
     private void groupColumn1Based(int fromColumn, int toColumn) {
         CTCols ctCols=worksheet.getColsArray(0);
         CTCol ctCol=CTCol.Factory.newInstance();
@@ -2314,7 +2315,7 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet, OoxmlSheetEx
         CTCol col = columnHelper.getColumn(columnIndex, false);
         int colInfoIx = columnHelper.getIndexOfColumn(cols, col);
 
-        int idx = findColInfoIdx(Math.toIntExact(col.getMax()), colInfoIx);
+        int idx = col == null ? -1 : findColInfoIdx(Math.toIntExact(col.getMax()), colInfoIx);
         if (idx == -1) {
             return;
         }
@@ -2329,7 +2330,7 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet, OoxmlSheetEx
         int endIdx = findEndOfColumnOutlineGroup(idx);
 
         // expand:
-        // colapsed bit must be unset
+        // collapsed bit must be unset
         // hidden bit gets unset _if_ surrounding groups are expanded you can
         // determine
         // this by looking at the hidden bit of the enclosing group. You will
@@ -2454,10 +2455,10 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet, OoxmlSheetEx
     }
 
     /**
-     * Get the visibility state for a given column.
+     * Set the visibility state for a given column.
      *
      * @param columnIndex - the column to get (0-based)
-     * @param hidden - the visiblity state of the column
+     * @param hidden - the visibility state of the column
      */
     @Override
     public void setColumnHidden(int columnIndex, boolean hidden) {
@@ -3083,9 +3084,17 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet, OoxmlSheetEx
         // also remove any hyperlinks associated with this row
         if (hyperlinks != null) {
             for (XSSFHyperlink link : new ArrayList<>(hyperlinks)) {
-                CellReference ref = new CellReference(link.getCellRef());
-                if (rowsToRemoveSet.contains(ref.getRow())) {
-                    hyperlinks.remove(link);
+                CellRangeAddress range = CellRangeAddress.valueOf(link.getCellRef());
+                if (range.getFirstRow() == range.getLastRow() && rowsToRemoveSet.contains(range.getFirstRow())) {
+                    removeHyperlink(link);
+                } else if (range.getFirstRow() != range.getLastRow()) {
+                    boolean toRemove = true;
+                    for (int i = range.getFirstRow(); i <= range.getLastRow() && toRemove; i++) {
+                        toRemove = rowsToRemoveSet.contains(i);
+                    }
+                    if (toRemove) {
+                        removeHyperlink(link);
+                    }
                 }
             }
         }
@@ -3961,6 +3970,20 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet, OoxmlSheetEx
         safeGetProtectionField().setSelectUnlockedCells(enabled);
     }
 
+    /**
+     * Reads the dimensions of the sheet data
+     * @return dimensions of the sheet data as a Cell Range (can be null)
+     * @since POI 5.2.3
+     */
+    public CellRangeAddress getDimension() {
+        CTSheetDimension ctSheetDimension = worksheet.getDimension();
+        String ref = ctSheetDimension == null ? null : ctSheetDimension.getRef();
+        if (ref != null) {
+            return CellRangeAddress.valueOf(ref);
+        }
+        return null;
+    }
+
     private CTSheetProtection safeGetProtectionField() {
         if (!isSheetProtectionEnabled()) {
             return worksheet.addNewSheetProtection();
@@ -4248,13 +4271,13 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet, OoxmlSheetEx
 
     @Override
     public CellRangeAddress getRepeatingRows() {
-        return getRepeatingRowsOrColums(true);
+        return getRepeatingRowsOrColumns(true);
     }
 
 
     @Override
     public CellRangeAddress getRepeatingColumns() {
-        return getRepeatingRowsOrColums(false);
+        return getRepeatingRowsOrColumns(false);
     }
 
     @Override
@@ -4371,7 +4394,7 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet, OoxmlSheetEx
     }
 
 
-    private CellRangeAddress getRepeatingRowsOrColums(boolean rows) {
+    private CellRangeAddress getRepeatingRowsOrColumns(boolean rows) {
         int sheetIndex = getWorkbook().getSheetIndex(this);
         XSSFName name = getWorkbook().getBuiltInName(
                 XSSFName.BUILTIN_PRINT_TITLE, sheetIndex);

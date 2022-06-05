@@ -105,14 +105,14 @@ public final class FunctionEval {
         retval[37] = BooleanFunction.OR;
         retval[38] = BooleanFunction.NOT;
         retval[39] = NumericFunction.MOD;
-        // 40: DCOUNT
+        retval[40] = new DStarRunner(DStarRunner.DStarAlgorithmEnum.DCOUNT);
         retval[41] = new DStarRunner(DStarRunner.DStarAlgorithmEnum.DSUM);
-        // 42: DAVERAGE
+        retval[42] = new DStarRunner(DStarRunner.DStarAlgorithmEnum.DAVERAGE);
         retval[43] = new DStarRunner(DStarRunner.DStarAlgorithmEnum.DMIN);
         retval[44] = new DStarRunner(DStarRunner.DStarAlgorithmEnum.DMAX);
-        // 45: DSTDEV
+        retval[45] = new DStarRunner(DStarRunner.DStarAlgorithmEnum.DSTDEV);
         retval[46] = AggregateFunction.VAR;
-        // 47: DVAR
+        retval[47] = new DStarRunner(DStarRunner.DStarAlgorithmEnum.DVAR);
         retval[48] = TextFunction.TEXT;
         // 49: LINEST
         retval[50] = new Trend();
@@ -201,15 +201,16 @@ public final class FunctionEval {
         retval[183] = AggregateFunction.PRODUCT;
         retval[184] = NumericFunction.FACT;
 
-        // 189: DPRODUCT
+        retval[189] = new DStarRunner(DStarRunner.DStarAlgorithmEnum.DPRODUCT);
         retval[190] = LogicalFunction.ISNONTEXT;
 
+        retval[193] = AggregateFunction.STDEVP;
         retval[194] = AggregateFunction.VARP;
-        // 195: DSTDEVP
-        // 196: DVARP
+        retval[195] = new DStarRunner(DStarRunner.DStarAlgorithmEnum.DSTDEVP);
+        retval[196] = new DStarRunner(DStarRunner.DStarAlgorithmEnum.DVARP);
         retval[197] = NumericFunction.TRUNC;
         retval[198] = LogicalFunction.ISLOGICAL;
-        // 199: DCOUNTA
+        retval[199] = new DStarRunner(DStarRunner.DStarAlgorithmEnum.DCOUNTA);
 
         //204: USDOLLAR (YEN in BIFF3)
         //205: FINDB
@@ -272,11 +273,11 @@ public final class FunctionEval {
         // 290: LOGNORMDIST
         // 291: LOGINV
         // 292: NEGBINOMDIST
-        // 293: NORMDIST
-        // 294: NORMSDIST
-        // 295: NORMINV
-        // 296: NORMSINV
-        // 297: STANDARDIZE
+        retval[293] = NormDist.instance;
+        retval[294] = NormSDist.instance;
+        retval[295] = NormInv.instance;
+        retval[296] = NormSInv.instance;
+        retval[297] = Standardize.instance;
         retval[298] = NumericFunction.ODD;
         // 299: PERMUT
         retval[300] = NumericFunction.POISSON;
@@ -332,13 +333,13 @@ public final class FunctionEval {
         // 358: GETPIVOTDATA
         retval[359] = new Hyperlink();
         // 360: PHONETIC
-        // 361: AVERAGEA
+        retval[361] = AggregateFunction.AVERAGEA;
         retval[362] = MinaMaxa.MAXA;
         retval[363] = MinaMaxa.MINA;
-        // 364: STDEVPA
-        // 365: VARPA
-        // 366: STDEVA
-        // 367: VARA
+        retval[364] = AggregateFunction.STDEVPA;
+        retval[365] = AggregateFunction.VARPA;
+        retval[366] = AggregateFunction.STDEVA;
+        retval[367] = AggregateFunction.VARA;
 
         for (int i = 0; i < retval.length; i++) {
             Function f = retval[i];

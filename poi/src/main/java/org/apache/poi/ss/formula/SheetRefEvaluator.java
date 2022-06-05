@@ -90,10 +90,18 @@ final class SheetRefEvaluator {
         return getSheet().isRowHidden(rowIndex);
     }
 
-	/**
-	 * @return The last used row in this sheet
-	 */
-	public int getLastRowNum() {
-		return getSheet().getLastRowNum();
-	}
+    /**
+     * @return The last used row in this sheet
+     */
+    public int getLastRowNum() {
+        return getSheet().getLastRowNum();
+    }
+
+    /**
+     * @return The maximum row number that is possible for the current
+     *         Spreadsheet version, see {@link org.apache.poi.ss.SpreadsheetVersion#getLastRowIndex()}
+     */
+    public int getMaxRowNum() {
+        return _bookEvaluator.getWorkbook().getSpreadsheetVersion().getLastRowIndex();
+    }
 }

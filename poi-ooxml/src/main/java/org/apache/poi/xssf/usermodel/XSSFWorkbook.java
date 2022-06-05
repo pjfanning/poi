@@ -20,6 +20,7 @@ package org.apache.poi.xssf.usermodel;
 import static org.apache.poi.ooxml.POIXMLTypeLoader.DEFAULT_XML_OPTIONS;
 import static org.apache.poi.xssf.usermodel.helpers.XSSFPasswordHelper.setPassword;
 import static org.apache.poi.xssf.usermodel.helpers.XSSFPasswordHelper.validatePassword;
+import static org.openxmlformats.schemas.spreadsheetml.x2006.main.STRefMode.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -70,6 +71,7 @@ import org.apache.poi.ss.formula.SheetNameFormatter;
 import org.apache.poi.ss.formula.udf.AggregatingUDFFinder;
 import org.apache.poi.ss.formula.udf.IndexedUDFFinder;
 import org.apache.poi.ss.formula.udf.UDFFinder;
+import org.apache.poi.ss.usermodel.CellReferenceType;
 import org.apache.poi.ss.usermodel.DataFormat;
 import org.apache.poi.ss.usermodel.Date1904Support;
 import org.apache.poi.ss.usermodel.Name;
@@ -96,24 +98,7 @@ import org.apache.poi.xssf.usermodel.helpers.XSSFFormulaUtils;
 import org.apache.xmlbeans.XmlException;
 import org.apache.xmlbeans.XmlObject;
 import org.apache.xmlbeans.XmlOptions;
-import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTBookView;
-import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTBookViews;
-import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTCalcPr;
-import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTDefinedName;
-import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTDefinedNames;
-import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTDialogsheet;
-import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTExternalReference;
-import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTPivotCache;
-import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTPivotCaches;
-import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTSheet;
-import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTSheets;
-import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTWorkbook;
-import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTWorkbookPr;
-import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTWorkbookProtection;
-import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTWorksheet;
-import org.openxmlformats.schemas.spreadsheetml.x2006.main.STCalcMode;
-import org.openxmlformats.schemas.spreadsheetml.x2006.main.STSheetState;
-import org.openxmlformats.schemas.spreadsheetml.x2006.main.WorkbookDocument;
+import org.openxmlformats.schemas.spreadsheetml.x2006.main.*;
 
 /**
  * High level representation of a SpreadsheetML workbook.  This is the first object most users
@@ -259,7 +244,7 @@ public class XSSFWorkbook extends POIXMLDocument implements Workbook, Date1904Su
      *  footprint than an InputStream backed one.
      *
      * @param pkg the OpenXML4J {@code OPC Package} object.
-     * @throws IOException
+     * @throws IOException If reading data from the package fails
      * @throws POIXMLException a RuntimeException that can be caused by invalid OOXML data
      * @throws RuntimeException a number of other runtime exceptions can be thrown, especially if there are problems with the
      * input format
@@ -291,7 +276,7 @@ public class XSSFWorkbook extends POIXMLDocument implements Workbook, Date1904Su
      *       pkg.close(); // gracefully closes the underlying zip file
      *   }</pre>
      *
-     * @throws IOException
+     * @throws IOException If reading data from the stream fails
      * @throws POIXMLException a RuntimeException that can be caused by invalid OOXML data
      * @throws RuntimeException a number of other runtime exceptions can be thrown, especially if there are problems with the
      * input format
@@ -315,8 +300,8 @@ public class XSSFWorkbook extends POIXMLDocument implements Workbook, Date1904Su
      *  than opening from an InputStream
      *
      * @param file   the file to open
-     * @throws IOException
-     * @throws InvalidFormatException
+     * @throws IOException If reading data from the file fails
+     * @throws InvalidFormatException If the file has a format that cannot be read or if the file is corrupted
      * @throws POIXMLException a RuntimeException that can be caused by invalid OOXML data
      * @throws RuntimeException a number of other runtime exceptions can be thrown, especially if there are problems with the
      * input format
@@ -337,7 +322,7 @@ public class XSSFWorkbook extends POIXMLDocument implements Workbook, Date1904Su
      *  than opening from an InputStream
      *
      * @param path   the file name.
-     * @throws IOException
+     * @throws IOException If reading data from the file fails
      * @throws POIXMLException a RuntimeException that can be caused by invalid OOXML data
      * @throws RuntimeException a number of other runtime exceptions can be thrown, especially if there are problems with the
      * input format
@@ -350,7 +335,7 @@ public class XSSFWorkbook extends POIXMLDocument implements Workbook, Date1904Su
     /**
      * Constructs a XSSFWorkbook object using Package Part.
      * @param part  package part
-     * @throws IOException
+     * @throws IOException If reading data from the Package Part fails
      * @throws POIXMLException a RuntimeException that can be caused by invalid OOXML data
      * @throws RuntimeException a number of other runtime exceptions can be thrown, especially if there are problems with the
      * input format
@@ -1566,6 +1551,33 @@ public class XSSFWorkbook extends POIXMLDocument implements Workbook, Date1904Su
         setPrintArea(sheetIndex, reference);
     }
 
+    @Override
+    public CellReferenceType getCellReferenceType() {
+        final CTCalcPr calcPr = getCTWorkbook().getCalcPr();
+        if (calcPr == null) {
+            return CellReferenceType.UNKNOWN;
+        } else if (calcPr.getRefMode() == R_1_C_1) {
+            return CellReferenceType.R1C1;
+        } else if (calcPr.getRefMode() == A_1) {
+            return CellReferenceType.A1;
+        }
+        return CellReferenceType.UNKNOWN;
+    }
+
+    @Override
+    public void setCellReferenceType(CellReferenceType cellReferenceType) {
+        CTCalcPr calcPr = getCTWorkbook().getCalcPr();
+        if (cellReferenceType == CellReferenceType.UNKNOWN) {
+            if (calcPr != null) {
+                calcPr.unsetRefMode();
+            }
+        } else {
+            if (calcPr == null) calcPr = getCTWorkbook().addNewCalcPr();
+            STRefMode.Enum refMode = cellReferenceType == CellReferenceType.R1C1 ? R_1_C_1 : A_1;
+            calcPr.setRefMode(refMode);
+        }
+    }
+
     private static String getReferencePrintArea(String sheetName, int startC, int endC, int startR, int endR) {
         //windows excel example: Sheet1!$C$3:$E$4
         CellReference colRef = new CellReference(sheetName, startR, startC, true, true);
@@ -2473,6 +2485,7 @@ public class XSSFWorkbook extends POIXMLDocument implements Workbook, Date1904Su
 
     /**
      * Whether a call to {@link XSSFCell#setCellFormula(String)} will validate the formula or not.
+     * When enabled (which is the default), this option can lead to formulas being modified by POI formula renderer.
      *
      * @param value true if the application will validate the formula is correct
      * @since 3.17
@@ -2483,6 +2496,7 @@ public class XSSFWorkbook extends POIXMLDocument implements Workbook, Date1904Su
 
     /**
      * Whether a call to {@link XSSFCell#setCellFormula(String)} will validate the formula or not.
+     * When enabled (which is the default), this option can lead to formulas being modified by POI formula renderer.
      *
      * @since 3.17
      */

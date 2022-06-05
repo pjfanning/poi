@@ -43,6 +43,7 @@ import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.util.LocaleUtil;
+import org.apache.poi.util.TempFile;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFDataFormat;
 import org.apache.poi.xssf.usermodel.XSSFFont;
@@ -101,7 +102,7 @@ public final class BigGridDemo {
             }
 
             //Step 2. Generate XML file.
-            tmp = File.createTempFile("sheet", ".xml");
+            tmp = TempFile.createTempFile("sheet", ".xml");
             try (
                     FileOutputStream stream = new FileOutputStream(tmp);
                     Writer fw = new OutputStreamWriter(stream, XML_ENCODING)

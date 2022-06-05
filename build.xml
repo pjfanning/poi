@@ -42,7 +42,7 @@ under the License.
 
     <description>The Apache POI project Ant build.</description>
 
-    <property name="version.id" value="5.2.1-SNAPSHOT"/>
+    <property name="version.id" value="5.2.3-SNAPSHOT"/>
     <property name="release.rc" value=""/>
 
     <property environment="env"/>
@@ -153,7 +153,7 @@ under the License.
     <property name="ooxml.testokfile" location="poi-ooxml/build/testokfile.txt"/>
 
     <property name="ooxml.lite.agent" location="build/dist/maven/poi-ooxml-lite-agent/poi-ooxml-lite-agent-${version.id}.jar"/>
-    <property name="ooxml.lite.report" location="build/ooxml-lite-report"/>
+    <property name="ooxml.lite.report" location="src/resources/ooxml-lite-report"/>
     <property name="ooxml.lite.jar" location="build/dist/maven/poi-ooxml-lite/poi-ooxml-lite-${version.id}.jar"/>
     <property name="ooxml.lite.includes" value="^(com/microsoft/schemas|org/(etsi|openxmlformats|w3/)|org/apache/poi/schemas)"/>
     <property name="ooxml.lite.output.dir" location="poi-ooxml-lite-agent/build/classes/ant/java"/>
@@ -268,7 +268,7 @@ under the License.
     <dependency prefix="main.commons-math3" artifact="org.apache.commons:commons-math3:3.6.1" usage="main"/>
     <dependency prefix="main.commons-io" artifact="commons-io:commons-io:2.11.0" usage="main"/>
     <dependency prefix="main.com.zaxxer" artifact="com.zaxxer:SparseBitSet:1.2" usage="main"/>
-    <dependency prefix="main.log4j-api" artifact="org.apache.logging.log4j:log4j-api:2.17.1" usage="main"/>
+    <dependency prefix="main.log4j-api" artifact="org.apache.logging.log4j:log4j-api:2.17.2" usage="main"/>
 
     <dependency prefix="main.junit-api" artifact="org.junit.jupiter:junit-jupiter-api:5.8.2" usage="main-tests"/>
     <dependency prefix="main.junit-jengine" artifact="org.junit.jupiter:junit-jupiter-engine:5.8.2" usage="main-tests"/>
@@ -280,22 +280,22 @@ under the License.
     <dependency prefix="main.junit-plauncher" artifact="org.junit.platform:junit-platform-launcher:1.8.1" usage="main-tests"/>
 
 
-    <dependency prefix="main.jmh" artifact="org.openjdk.jmh:jmh-core:1.34" usage="main-tests"/>
-    <dependency prefix="main.jmhAnnotation" artifact="org.openjdk.jmh:jmh-generator-annprocess:1.34" usage="main-tests"/>
+    <dependency prefix="main.jmh" artifact="org.openjdk.jmh:jmh-core:1.35" usage="main-tests"/>
+    <dependency prefix="main.jmhAnnotation" artifact="org.openjdk.jmh:jmh-generator-annprocess:1.35" usage="main-tests"/>
     <dependency prefix="main.hamcrest" artifact="org.hamcrest:hamcrest:2.2" usage="main-tests"/>
-    <dependency prefix="main.xmlunit" artifact="org.xmlunit:xmlunit-core:2.8.4" usage="main-tests"/>
-    <dependency prefix="main.mockito" artifact="org.mockito:mockito-core:4.2.0" usage="main-tests"/>
+    <dependency prefix="main.xmlunit" artifact="org.xmlunit:xmlunit-core:2.9.0" usage="main-tests"/>
+    <dependency prefix="main.mockito" artifact="org.mockito:mockito-core:4.6.1" usage="main-tests"/>
     <dependency prefix="main.byte-buddy" artifact="net.bytebuddy:byte-buddy:1.12.3" usage="main-tests"/>
     <dependency prefix="main.byte-buddy-agent" artifact="net.bytebuddy:byte-buddy-agent:1.12.3" usage="main-tests"/>
     <dependency prefix="main.objenesis" artifact="org.objenesis:objenesis:3.1" usage="main-tests"/>
-    <dependency prefix="main.log4j-core" artifact="org.apache.logging.log4j:log4j-core:2.17.1" usage="main-tests"/>
+    <dependency prefix="main.log4j-core" artifact="org.apache.logging.log4j:log4j-core:2.17.2" usage="main-tests"/>
     <dependency prefix="main.commons-logging" artifact="commons-logging:commons-logging:1.2" usage="main-tests"/>
 
     <dependency prefix="main.ant" artifact="org.apache.ant:ant:1.10.9" usage="excelant"/>
     <dependency prefix="main.antlauncher" artifact="org.apache.ant:ant-launcher:1.10.9" usage="excelant"/>
 
     <!-- xml signature libs - not part of the distribution -->
-    <dependency prefix="dsig.xmlsec" artifact="org.apache.santuario:xmlsec:2.3.0" usage="ooxml-provided"/>
+    <dependency prefix="dsig.xmlsec" artifact="org.apache.santuario:xmlsec:3.0.0" usage="ooxml-provided"/>
     <dependency prefix="dsig.bouncycastle-prov" artifact="org.bouncycastle:bcprov-jdk15on:1.70" usage="ooxml-provided"/>
     <dependency prefix="dsig.bouncycastle-pkix" artifact="org.bouncycastle:bcpkix-jdk15on:1.70" usage="ooxml-provided"/>
     <dependency prefix="dsig.bouncycastle-util" artifact="org.bouncycastle:bcutil-jdk15on:1.70" usage="ooxml-provided"/>
@@ -324,20 +324,21 @@ under the License.
     <dependency prefix="svg.batik-transcoder" artifact="org.apache.xmlgraphics:batik-transcoder:1.14" usage="ooxml-batik"/>
     <dependency prefix="svg.batik-util" artifact="org.apache.xmlgraphics:batik-util:1.14" usage="ooxml-batik"/>
     <dependency prefix="svg.batik-xml" artifact="org.apache.xmlgraphics:batik-xml:1.14" usage="ooxml-batik"/>
-    <dependency prefix="pdf.pdfbox" artifact="org.apache.pdfbox:pdfbox:2.0.25" usage="ooxml-provided"/>
-    <dependency prefix="pdf.fontbox" artifact="org.apache.pdfbox:fontbox:2.0.25" usage="ooxml-provided"/>
-    <dependency prefix="pdf.graphics2d" artifact="de.rototor.pdfbox:graphics2d:0.34" usage="ooxml-provided"/>
+    <dependency prefix="pdf.pdfbox" artifact="org.apache.pdfbox:pdfbox:2.0.26" usage="ooxml-provided"/>
+    <dependency prefix="pdf.fontbox" artifact="org.apache.pdfbox:fontbox:2.0.26" usage="ooxml-provided"/>
+    <dependency prefix="pdf.graphics2d" artifact="de.rototor.pdfbox:graphics2d:0.38" usage="ooxml-provided"/>
 
     <!-- jars in the ooxml-lib directory, see the fetch-ooxml-jars target-->
-    <dependency prefix="ooxml.curvesapi" artifact="com.github.virtuald:curvesapi:1.06" usage="ooxml"/>
-    <dependency prefix="ooxml.xmlbeans" artifact="org.apache.xmlbeans:xmlbeans:5.0.2" usage="ooxml"/>
+    <dependency prefix="ooxml.curvesapi" artifact="com.github.virtuald:curvesapi:1.07" usage="ooxml"/>
+    <dependency prefix="ooxml.xmlbeans" artifact="org.apache.xmlbeans:xmlbeans:5.0.3" usage="ooxml"/>
     <dependency prefix="ooxml.commons-compress" artifact="org.apache.commons:commons-compress:1.21" usage="ooxml"/>
 
     <!-- jars in the ooxml-test-lib directory, see the fetch-ooxml-jars target-->
     <dependency prefix="ooxml.test.reflections" artifact="org.reflections:reflections:0.10.2" usage="ooxml-tests"/>
-    <dependency prefix="ooxml.test.guava" artifact="com.google.guava:guava:30.1-jre" usage="ooxml-tests"/>
+    <dependency prefix="ooxml.test.guava" artifact="com.google.guava:guava:31.1-jre" usage="ooxml-tests"/>
     <dependency prefix="ooxml.test.javassist" artifact="org.javassist:javassist:3.27.0-GA" usage="ooxml-tests"/>
-    <dependency prefix="ooxml.test.slf4j-api" artifact="org.slf4j:slf4j-api:1.7.33" usage="ooxml-tests"/>
+    <dependency prefix="ooxml.test.slf4j-api" artifact="org.slf4j:slf4j-api:1.7.36" usage="ooxml-tests"/>
+    <dependency prefix="ooxml.test.opczip" artifact="com.github.rzymek:opczip:1.2.0" usage="ooxml-tests"/>
 
     <!-- coverage libs -->
     <dependency prefix="jacoco" artifact="org.jacoco:jacoco:0.8.6" usage="util" packaging="zip"/>
@@ -347,7 +348,7 @@ under the License.
 
     <!-- license and api checks -->
     <dependency prefix="rat" artifact="org.apache.rat:apache-rat:0.13" usage="util"/>
-    <dependency prefix="forbidden" artifact="de.thetaphi:forbiddenapis:3.1" usage="util"/>
+    <dependency prefix="forbidden" artifact="de.thetaphi:forbiddenapis:3.3" usage="util"/>
 
     <!-- See https://www.ecma-international.org/publications/standards/Ecma-376.htm -->
     <!-- "Copy these file(s), free of charge" -->
@@ -479,6 +480,7 @@ under the License.
         <path refid="main.classpath"/>
         <pathelement location="${main.output.dir}"/>
         <pathelement location="${ooxml.test.guava.jar}"/>
+        <pathelement location="${ooxml.test.opczip.jar}"/>
         <!-- classes are omitted on test cases outside the xml-dsign area to avoid classpath poisioning -->
         <!--path refid="ooxml.xmlsec.classpath"/-->
         <!-- Used only for ExtractorFactory, see #57963 -->
@@ -680,6 +682,8 @@ under the License.
             <fileset dir="${basedir}/lib/main-tests">
                 <include name="mockito-core-3*.jar"/>
                 <include name="mockito-core-4.0*.jar"/>
+                <include name="mockito-core-4.2*.jar"/>
+                <include name="mockito-core-4.5*.jar"/>
                 <include name="hamcrest-core*"/>
                 <include name="junit-4*.jar"/>
                 <include name="*slf4j*.jar"/>
@@ -701,7 +705,7 @@ under the License.
                 <include name="bc*-1.6*.jar"/>
                 <include name="batik*.jar"/>
                 <include name="slf4j*-1.7.30.jar"/>
-                <include name="xmlsec-2.2*.jar"/>
+                <include name="xmlsec-2*.jar"/>
             </fileset>
             <fileset dir="${basedir}/lib/ooxml-tests">
                 <include name="guava-20.0.jar"/>
@@ -709,6 +713,7 @@ under the License.
             <fileset dir="${basedir}/lib/util">
                 <include name="asm*7.2.jar"/>
                 <include name="org.jacoco.*-0.8.5.*.jar"/>
+                <include name="forbiddenapis-3.1.jar"/>
             </fileset>
             <fileset dir="${basedir}/lib/util">
                 <include name="jacoco-0.8.5.zip"/>
@@ -823,6 +828,7 @@ under the License.
                     <available file="${ooxml.test.guava.jar}"/>
                     <available file="${ooxml.test.javassist.jar}"/>
                     <available file="${ooxml.test.slf4j-api.jar}"/>
+                    <available file="${ooxml.test.opczip.jar}"/>
                     <available file="${svg.xml-apis-ext.jar}"/>
                     <available file="${svg.batik-anim.jar}"/>
                     <available file="${svg.batik-awt-util.jar}"/>
@@ -862,6 +868,7 @@ under the License.
         <downloadfile src="${ooxml.test.guava.url}" dest="${ooxml.test.guava.jar}"/>
         <downloadfile src="${ooxml.test.javassist.url}" dest="${ooxml.test.javassist.jar}"/>
         <downloadfile src="${ooxml.test.slf4j-api.url}" dest="${ooxml.test.slf4j-api.jar}"/>
+        <downloadfile src="${ooxml.test.opczip.url}" dest="${ooxml.test.opczip.jar}"/>
         <downloadfile src="${svg.batik-anim.url}" dest="${svg.batik-anim.jar}"/>
         <downloadfile src="${svg.batik-awt-util.url}" dest="${svg.batik-awt-util.jar}"/>
         <downloadfile src="${svg.batik-bridge.url}" dest="${svg.batik-bridge.jar}"/>
@@ -2467,6 +2474,7 @@ under the License.
                 <exclude name="documentation/content/xdocs/dtd/" />
                 <exclude name="documentation/content/xdocs/entity/" />
                 <exclude name="documentation/resources/images/pb-poi.cdr"/>
+                <exclude name="resources/ooxml-lite-report.*"/>
             </fileset>
         </rat:report>
 
@@ -2585,9 +2593,9 @@ under the License.
         <dependency prefix="spotbugs.commons-text" artifact="org.apache.commons:commons-text:1.9" usage="${spotbugs.lib}"/>
         <dependency prefix="spotbugs.jcip-annotations" artifact="net.jcip:jcip-annotations:1.0" usage="${spotbugs.lib}"/>
         <dependency prefix="spotbugs.icu4j" artifact="com.ibm.icu:icu4j:68.2" usage="${spotbugs.lib}" target="icu4j-63.1.jar"/>
-        <dependency prefix="spotbugs.log4j-api" artifact="org.apache.logging.log4j:log4j-api:2.17.1" usage="${spotbugs.lib}"/>
-        <dependency prefix="spotbugs.log4j-core" artifact="org.apache.logging.log4j:log4j-core:2.17.1" usage="${spotbugs.lib}"/>
-        <dependency prefix="spotbugs.log4j-slf4j18-impl" artifact="org.apache.logging.log4j:log4j-slf4j18-impl:2.17.1" usage="${spotbugs.lib}"/>
+        <dependency prefix="spotbugs.log4j-api" artifact="org.apache.logging.log4j:log4j-api:2.17.2" usage="${spotbugs.lib}"/>
+        <dependency prefix="spotbugs.log4j-core" artifact="org.apache.logging.log4j:log4j-core:2.17.2" usage="${spotbugs.lib}"/>
+        <dependency prefix="spotbugs.log4j-slf4j18-impl" artifact="org.apache.logging.log4j:log4j-slf4j18-impl:2.17.2" usage="${spotbugs.lib}"/>
         <dependency prefix="spotbugs.saxon" artifact="net.sf.saxon:Saxon-HE:9.9.1-8" usage="${spotbugs.lib}"/>
 
         <mkdir dir="${basedir}${spotbugs.lib}/config"/>
