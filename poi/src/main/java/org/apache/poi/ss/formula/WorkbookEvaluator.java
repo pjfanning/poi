@@ -24,6 +24,8 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Stack;
 import java.util.TreeSet;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ForkJoinPool;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -81,6 +83,8 @@ public final class WorkbookEvaluator {
     private final Logger EVAL_LOG = LogManager.getLogger("POI.FormulaEval");
     // current indent level for evaluation; negative value for no output
     private int dbgEvaluationOutputIndent = -1;
+
+    private ForkJoinPool forkJoinPool = new ForkJoinPool();
 
     /**
      * @param udfFinder pass {@code null} for default (AnalysisToolPak only)
@@ -312,6 +316,155 @@ public final class WorkbookEvaluator {
             CellReference cr = new CellReference(rowIndex, columnIndex);
             return new SimpleMessage("Evaluated " + sheetName + "!" + cr.formatAsString() + " to " + resultForLogging);
         });
+        // Usually (result === cce.getValue())
+        // But sometimes: (result==ErrorEval.CIRCULAR_REF_ERROR, cce.getValue()==null)
+        // When circular references are detected, the cache entry is only updated for
+        // the top evaluation frame
+        return result;
+    }
+
+    private CompletableFuture<ValueEval> success(ValueEval valueEval) {
+        CompletableFuture<ValueEval> future = new CompletableFuture<>();
+        future.complete(valueEval);
+        return future;
+    }
+
+    private CompletableFuture<ValueEval> asyncEvaluateAny(EvaluationCell srcCell, int sheetIndex,
+                                                          int rowIndex, int columnIndex, EvaluationTracker tracker) {
+
+        // avoid tracking dependencies to cells that have constant definition
+        boolean shouldCellDependencyBeRecorded = _stabilityClassifier == null || !_stabilityClassifier.isCellFinal(sheetIndex, rowIndex, columnIndex);
+        if (srcCell == null || srcCell.getCellType() != CellType.FORMULA) {
+            ValueEval result = getValueFromNonFormulaCell(srcCell);
+            if (shouldCellDependencyBeRecorded) {
+                tracker.acceptPlainValueDependency(_workbook, _workbookIx, sheetIndex, rowIndex, columnIndex, result);
+            }
+            return success(result);
+        }
+
+        FormulaCellCacheEntry cce = _cache.getOrCreateFormulaCellEntry(srcCell);
+        if (shouldCellDependencyBeRecorded || cce.isInputSensitive()) {
+            tracker.acceptFormulaDependency(cce);
+        }
+        IEvaluationListener evalListener = _evaluationListener;
+        CompletableFuture<ValueEval> result;
+        if (cce.getValue() == null) {
+            if (!tracker.startEvaluate(cce)) {
+                return success(ErrorEval.CIRCULAR_REF_ERROR);
+            }
+
+            try {
+
+                Ptg[] ptgs = _workbook.getFormulaTokens(srcCell);
+                OperationEvaluationContext ec = new OperationEvaluationContext
+                        (this, _workbook, sheetIndex, rowIndex, columnIndex, tracker);
+                evalListener.onStartEvaluate(srcCell, cce);
+                final CompletableFuture<ValueEval> completableFuture = new CompletableFuture<>();
+                result = completableFuture;
+                forkJoinPool.submit(() -> {
+                    try {
+                        ValueEval valueEval;
+                        if (evalListener == null) {
+                            valueEval = evaluateFormula(ec, ptgs);
+                        } else {
+                            evalListener.onStartEvaluate(srcCell, cce);
+                            valueEval = evaluateFormula(ec, ptgs);
+                            evalListener.onEndEvaluate(cce, valueEval);
+                        }
+                        tracker.updateCacheResult(valueEval);
+                        completableFuture.complete(valueEval);
+                        return valueEval;
+                    }  catch (NotImplementedException e) {
+                        NotImplementedException e2 = addExceptionInfo(e, sheetIndex, rowIndex, columnIndex);
+                        completableFuture.completeExceptionally(e2);
+                        throw e2;
+                    } catch (RuntimeException re) {
+                        if (re.getCause() instanceof WorkbookNotFoundException && _ignoreMissingWorkbooks) {
+                            LOG.atInfo().log("{} - Continuing with cached value!", re.getCause().getMessage());
+                            switch (srcCell.getCachedFormulaResultType()) {
+                                case NUMERIC: {
+                                    ValueEval exceptionEval = new NumberEval(srcCell.getNumericCellValue());
+                                    completableFuture.complete(exceptionEval);
+                                    return exceptionEval;
+                                }
+                                case STRING: {
+                                    ValueEval exceptionEval = new StringEval(srcCell.getStringCellValue());
+                                    completableFuture.complete(exceptionEval);
+                                    return exceptionEval;
+                                }
+                                case BLANK:
+                                    completableFuture.complete(BlankEval.instance);
+                                    return BlankEval.instance;
+                                case BOOLEAN: {
+                                    ValueEval exceptionEval = BoolEval.valueOf(srcCell.getBooleanCellValue());
+                                    completableFuture.complete(exceptionEval);
+                                    return exceptionEval;
+                                }
+                                case ERROR: {
+                                    ValueEval exceptionEval = ErrorEval.valueOf(srcCell.getErrorCellValue());
+                                    completableFuture.complete(exceptionEval);
+                                    return exceptionEval;
+                                }
+                                case FORMULA:
+                                default:
+                                    Exception exception = new RuntimeException("Unexpected cell type '" + srcCell.getCellType() + "' found!");
+                                    completableFuture.completeExceptionally(exception);
+                                    throw exception;
+                            }
+                        } else {
+                            throw re;
+                        }
+                    } finally {
+                        tracker.endEvaluate(cce);
+                    }
+                });
+            } catch (NotImplementedException e) {
+                tracker.endEvaluate(cce);
+                throw addExceptionInfo(e, sheetIndex, rowIndex, columnIndex);
+            } catch (RuntimeException re) {
+                tracker.endEvaluate(cce);
+                if (re.getCause() instanceof WorkbookNotFoundException && _ignoreMissingWorkbooks) {
+                    LOG.atInfo().log("{} - Continuing with cached value!", re.getCause().getMessage());
+                    switch (srcCell.getCachedFormulaResultType()) {
+                        case NUMERIC:
+                            result = success(new NumberEval(srcCell.getNumericCellValue()));
+                            break;
+                        case STRING:
+                            result = success(new StringEval(srcCell.getStringCellValue()));
+                            break;
+                        case BLANK:
+                            result = success(BlankEval.instance);
+                            break;
+                        case BOOLEAN:
+                            result = success(BoolEval.valueOf(srcCell.getBooleanCellValue()));
+                            break;
+                        case ERROR:
+                            result = success(ErrorEval.valueOf(srcCell.getErrorCellValue()));
+                            break;
+                        case FORMULA:
+                        default:
+                            throw new RuntimeException("Unexpected cell type '" + srcCell.getCellType() + "' found!");
+                    }
+                } else {
+                    throw re;
+                }
+            }
+        } else {
+            if (evalListener != null) {
+                evalListener.onCacheHit(sheetIndex, rowIndex, columnIndex, cce.getValue());
+            }
+            return success(cce.getValue());
+        }
+        if (LOG.isDebugEnabled()) {
+            result.thenApply((resultForLogging) -> {
+                LOG.atDebug().log(() -> {
+                    String sheetName = getSheetName(sheetIndex);
+                    CellReference cr = new CellReference(rowIndex, columnIndex);
+                    return new SimpleMessage("Evaluated " + sheetName + "!" + cr.formatAsString() + " to " + resultForLogging);
+                });
+                return null;
+            });
+        }
         // Usually (result === cce.getValue())
         // But sometimes: (result==ErrorEval.CIRCULAR_REF_ERROR, cce.getValue()==null)
         // When circular references are detected, the cache entry is only updated for
