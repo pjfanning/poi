@@ -36,10 +36,7 @@ import org.apache.poi.ooxml.POIXMLDocumentPart;
 import org.apache.poi.ooxml.POIXMLException;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.openxml4j.exceptions.PartAlreadyExistsException;
-import org.apache.poi.openxml4j.opc.PackagePart;
-import org.apache.poi.openxml4j.opc.PackageRelationship;
-import org.apache.poi.openxml4j.opc.PackageRelationshipCollection;
-import org.apache.poi.openxml4j.opc.TargetMode;
+import org.apache.poi.openxml4j.opc.*;
 import org.apache.poi.poifs.crypt.HashAlgorithm;
 import org.apache.poi.ss.SpreadsheetVersion;
 import org.apache.poi.ss.formula.FormulaShifter;
@@ -55,6 +52,7 @@ import org.apache.poi.ss.util.SSCellRange;
 import org.apache.poi.ss.util.SheetUtil;
 import org.apache.poi.util.Beta;
 import org.apache.poi.util.Internal;
+import org.apache.poi.util.Removal;
 import org.apache.poi.util.Units;
 import org.apache.poi.xssf.model.Comments;
 import org.apache.poi.xssf.usermodel.XSSFPivotTable.PivotTableReferenceConfigurator;
@@ -105,6 +103,7 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet, OoxmlSheetEx
     private List<CellRangeAddress> arrayFormulas;
     private final XSSFDataValidationHelper dataValidationHelper;
     private XSSFVMLDrawing xssfvmlDrawing;
+    private CellRangeAddress dimensionOverride;
 
     /**
      * Creates new XSSFSheet   - called by XSSFWorkbook to create a sheet from scratch.
@@ -743,19 +742,59 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet, OoxmlSheetEx
      * @param topRow        Top row visible in bottom pane
      * @param leftmostColumn   Left column visible in right pane.
      * @param activePane    Active pane.  One of: PANE_LOWER_RIGHT,
-     *                      PANE_UPPER_RIGHT, PANE_LOWER_LEFT, PANE_UPPER_LEFT
-     * @see Sheet#PANE_LOWER_LEFT
-     * @see Sheet#PANE_LOWER_RIGHT
-     * @see Sheet#PANE_UPPER_LEFT
-     * @see Sheet#PANE_UPPER_RIGHT
+     *                      PANE_UPPER_RIGHT, PANE_LOWER_LEFT, PANE_UPPER_LEFT (but there is a
+     *                      <a href="https://bz.apache.org/bugzilla/show_bug.cgi?id=66173">bug</a>, so add 1)
+     * @see #PANE_LOWER_LEFT
+     * @see #PANE_LOWER_RIGHT
+     * @see #PANE_UPPER_LEFT
+     * @see #PANE_UPPER_RIGHT
+     * @deprecated use {@link #createSplitPane(int, int, int, int, PaneType)}
      */
     @Override
+    @Deprecated
+    @Removal(version = "7.0.0")
     public void createSplitPane(int xSplitPos, int ySplitPos, int leftmostColumn, int topRow, int activePane) {
         createFreezePane(xSplitPos, ySplitPos, leftmostColumn, topRow);
         if (xSplitPos > 0 || ySplitPos > 0) {
             final CTPane pane = getPane(true);
             pane.setState(STPaneState.SPLIT);
             pane.setActivePane(STPane.Enum.forInt(activePane));
+        }
+    }
+
+    /**
+     * Creates a split pane. Any existing freezepane or split pane is overwritten.
+     * @param xSplitPos      Horizontal position of split (in 1/20th of a point).
+     * @param ySplitPos      Vertical position of split (in 1/20th of a point).
+     * @param topRow        Top row visible in bottom pane
+     * @param leftmostColumn   Left column visible in right pane.
+     * @param activePane    Active pane.
+     * @see PaneType
+     * @since POI 5.2.3
+     */
+    @Override
+    public void createSplitPane(int xSplitPos, int ySplitPos, int leftmostColumn, int topRow, PaneType activePane) {
+        createFreezePane(xSplitPos, ySplitPos, leftmostColumn, topRow);
+        if (xSplitPos > 0 || ySplitPos > 0) {
+            final CTPane pane = getPane(true);
+            pane.setState(STPaneState.SPLIT);
+            STPane.Enum stPaneEnum;
+            switch (activePane) {
+                case LOWER_RIGHT:
+                    stPaneEnum = STPane.BOTTOM_RIGHT;
+                    break;
+                case UPPER_RIGHT:
+                    stPaneEnum = STPane.TOP_RIGHT;
+                    break;
+                case LOWER_LEFT:
+                    stPaneEnum = STPane.BOTTOM_LEFT;
+                    break;
+                case UPPER_LEFT:
+                default:
+                    stPaneEnum = STPane.TOP_LEFT;
+                    break;
+            }
+            pane.setActivePane(stPaneEnum);
         }
     }
 
@@ -950,7 +989,7 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet, OoxmlSheetEx
     @Override
     public CellStyle getColumnStyle(int column) {
         int idx = columnHelper.getColDefaultStyle(column);
-        return getWorkbook().getCellStyleAt((short)(idx == -1 ? 0 : idx));
+        return getWorkbook().getCellStyleAt(idx == -1 ? 0 : idx);
     }
 
     /**
@@ -1179,26 +1218,41 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet, OoxmlSheetEx
      * @see Sheet#BottomMargin
      * @see Sheet#HeaderMargin
      * @see Sheet#FooterMargin
+     * @deprecated use {@link #getMargin(PageMargin)}
      */
     @Override
+    @Deprecated
+    @Removal(version = "7.0.0")
     public double getMargin(short margin) {
+        return getMargin(PageMargin.getByShortValue(margin));
+    }
+
+    /**
+     * Gets the size of the margin in inches.
+     *
+     * @param margin which margin to get
+     * @return the size of the margin
+     * @since POI 5.2.3
+     */
+    @Override
+    public double getMargin(PageMargin margin) {
         if (!worksheet.isSetPageMargins()) {
             return 0;
         }
 
         CTPageMargins pageMargins = worksheet.getPageMargins();
         switch (margin) {
-            case LeftMargin:
+            case LEFT:
                 return pageMargins.getLeft();
-            case RightMargin:
+            case RIGHT:
                 return pageMargins.getRight();
-            case TopMargin:
+            case TOP:
                 return pageMargins.getTop();
-            case BottomMargin:
+            case BOTTOM:
                 return pageMargins.getBottom();
-            case HeaderMargin:
+            case HEADER:
                 return pageMargins.getHeader();
-            case FooterMargin:
+            case FOOTER:
                 return pageMargins.getFooter();
             default :
                 throw new IllegalArgumentException("Unknown margin constant:  " + margin);
@@ -1208,7 +1262,7 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet, OoxmlSheetEx
     /**
      * Sets the size of the margin in inches.
      *
-     * @param margin which margin to get
+     * @param margin which margin to set
      * @param size the size of the margin
      * @see Sheet#LeftMargin
      * @see Sheet#RightMargin
@@ -1216,31 +1270,50 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet, OoxmlSheetEx
      * @see Sheet#BottomMargin
      * @see Sheet#HeaderMargin
      * @see Sheet#FooterMargin
+     * @deprecated use {@link #setMargin(PageMargin, double)} instead
      */
     @Override
+    @Deprecated
+    @Removal(version = "7.0.0")
     public void setMargin(short margin, double size) {
+        final PageMargin pageMargin = PageMargin.getByShortValue(margin);
+        if (pageMargin == null) {
+            throw new IllegalArgumentException( "Unknown margin constant:  " + margin );
+        }
+        setMargin(pageMargin, size);
+    }
+
+    /**
+     * Sets the size of the margin in inches.
+     *
+     * @param margin which margin to set
+     * @param size the size of the margin
+     * @since POI 5.2.3
+     */
+    @Override
+    public void setMargin(PageMargin margin, double size) {
         CTPageMargins pageMargins = worksheet.isSetPageMargins() ?
                 worksheet.getPageMargins() : worksheet.addNewPageMargins();
         switch (margin) {
-            case LeftMargin:
+            case LEFT:
                 pageMargins.setLeft(size);
                 break;
-            case RightMargin:
+            case RIGHT:
                 pageMargins.setRight(size);
                 break;
-            case TopMargin:
+            case TOP:
                 pageMargins.setTop(size);
                 break;
-            case BottomMargin:
+            case BOTTOM:
                 pageMargins.setBottom(size);
                 break;
-            case HeaderMargin:
+            case HEADER:
                 pageMargins.setHeader(size);
                 break;
-            case FooterMargin:
+            case FOOTER:
                 pageMargins.setFooter(size);
                 break;
-            default :
+            default:
                 throw new IllegalArgumentException( "Unknown margin constant:  " + margin );
         }
     }
@@ -2969,6 +3042,15 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet, OoxmlSheetEx
      */
     @Override
     public void shiftRows(int startRow, int endRow, final int n, boolean copyRowHeight, boolean resetOriginalRowHeight) {
+        List<XSSFTable> overlappingTables = new ArrayList<>();
+        for (XSSFTable table : getTables()) {
+            if ((table.getStartRowIndex() < startRow && table.getEndRowIndex() < startRow)
+                    || (table.getStartRowIndex() > endRow && table.getEndRowIndex() > endRow))  {
+                // not overlapping
+            } else {
+                overlappingTables.add(table);
+            }
+        }
         int sheetIndex = getWorkbook().getSheetIndex(this);
         String sheetName = getWorkbook().getSheetName(sheetIndex);
         FormulaShifter formulaShifter = FormulaShifter.createForRowShift(
@@ -2984,6 +3066,10 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet, OoxmlSheetEx
         rowShifter.updateHyperlinks(formulaShifter);
 
         rebuildRows();
+
+        for (XSSFTable table : overlappingTables) {
+            rebuildTableFormulas(table);
+        }
     }
 
     /**
@@ -2997,6 +3083,15 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet, OoxmlSheetEx
      */
     @Override
     public void shiftColumns(int startColumn, int endColumn, final int n) {
+        List<XSSFTable> overlappingTables = new ArrayList<>();
+        for (XSSFTable table : getTables()) {
+            if ((table.getStartColIndex() < startColumn && table.getEndColIndex() < startColumn)
+                    || (table.getStartColIndex() > endColumn && table.getEndColIndex() > endColumn))  {
+                // not overlapping
+            } else {
+                overlappingTables.add(table);
+            }
+        }
         XSSFVMLDrawing vml = getVMLDrawing(false);
         shiftCommentsForColumns(vml, startColumn, endColumn, n);
         FormulaShifter formulaShifter = FormulaShifter.createForColumnShift(this.getWorkbook().getSheetIndex(this), this.getSheetName(), startColumn, endColumn, n, SpreadsheetVersion.EXCEL2007);
@@ -3009,6 +3104,35 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet, OoxmlSheetEx
         columnShifter.updateNamedRanges(formulaShifter);
 
         rebuildRows();
+
+        for (XSSFTable table : overlappingTables) {
+            rebuildTableFormulas(table);
+        }
+    }
+
+    private void rebuildTableFormulas(XSSFTable table) {
+        //correct all sheet table-reference-formulas which probably got damaged after shift rows/columns
+        for (CTTableColumn tableCol : table.getCTTable().getTableColumns().getTableColumnList()) {
+            if (tableCol.getCalculatedColumnFormula() != null) {
+                int id = Math.toIntExact(tableCol.getId());
+                String formula = tableCol.getCalculatedColumnFormula().getStringValue();
+                int rFirst = table.getStartCellReference().getRow() + table.getHeaderRowCount();
+                int rLast = table.getEndCellReference().getRow() - table.getTotalsRowCount();
+                int c = table.getStartCellReference().getCol() + id - 1;
+                final boolean cellFormulaValidationFlag = getWorkbook().getCellFormulaValidation();
+                try {
+                    getWorkbook().setCellFormulaValidation(false);
+                    for (int r = rFirst; r <= rLast; r++) {
+                        XSSFRow row = getRow(r);
+                        if (row == null) row = createRow(r);
+                        XSSFCell cell = row.getCell(c, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+                        cell.setCellFormula(formula);
+                    }
+                } finally {
+                    getWorkbook().setCellFormulaValidation(cellFormulaValidationFlag);
+                }
+            }
+        }
     }
 
     private void rebuildRows() {
@@ -3672,29 +3796,34 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet, OoxmlSheetEx
             }*/
         }
 
-        int minCell = Integer.MAX_VALUE, maxCell = Integer.MIN_VALUE;
-        for(Map.Entry<Integer, XSSFRow> entry : _rows.entrySet()) {
-            XSSFRow row = entry.getValue();
+        CellRangeAddress cellRangeAddress = dimensionOverride;
+        if (cellRangeAddress == null) {
+            int minCell = Integer.MAX_VALUE, maxCell = Integer.MIN_VALUE;
+            for(Map.Entry<Integer, XSSFRow> entry : _rows.entrySet()) {
+                XSSFRow row = entry.getValue();
 
-            // first perform the normal write actions for the row
-            row.onDocumentWrite();
+                // first perform the normal write actions for the row
+                row.onDocumentWrite();
 
-            // then calculate min/max cell-numbers for the worksheet-dimension
-            if(row.getFirstCellNum() != -1) {
-                minCell = Math.min(minCell, row.getFirstCellNum());
+                // then calculate min/max cell-numbers for the worksheet-dimension
+                if(row.getFirstCellNum() != -1) {
+                    minCell = Math.min(minCell, row.getFirstCellNum());
+                }
+                if(row.getLastCellNum() != -1) {
+                    maxCell = Math.max(maxCell, row.getLastCellNum()-1);
+                }
             }
-            if(row.getLastCellNum() != -1) {
-                maxCell = Math.max(maxCell, row.getLastCellNum()-1);
+
+            // finally, if we had at least one cell we can populate the optional dimension-field
+            if(minCell != Integer.MAX_VALUE) {
+                cellRangeAddress = new CellRangeAddress(getFirstRowNum(), getLastRowNum(), minCell, maxCell);
             }
         }
-
-        // finally, if we had at least one cell we can populate the optional dimension-field
-        if(minCell != Integer.MAX_VALUE) {
-            String ref = new CellRangeAddress(getFirstRowNum(), getLastRowNum(), minCell, maxCell).formatAsString();
-            if(worksheet.isSetDimension()) {
-                worksheet.getDimension().setRef(ref);
+        if (cellRangeAddress != null) {
+            if (worksheet.isSetDimension()) {
+                worksheet.getDimension().setRef(cellRangeAddress.formatAsString());
             } else {
-                worksheet.addNewDimension().setRef(ref);
+                worksheet.addNewDimension().setRef(cellRangeAddress.formatAsString());
             }
         }
 
@@ -3976,6 +4105,9 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet, OoxmlSheetEx
      * @since POI 5.2.3
      */
     public CellRangeAddress getDimension() {
+        if (dimensionOverride != null) {
+            return dimensionOverride;
+        }
         CTSheetDimension ctSheetDimension = worksheet.getDimension();
         String ref = ctSheetDimension == null ? null : ctSheetDimension.getRef();
         if (ref != null) {
@@ -4190,7 +4322,7 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet, OoxmlSheetEx
 
         tables.put(tbl.getId(), table);
 
-        if(tableArea != null) {
+        if(tableArea != null && table.supportsAreaReference(tableArea)) {
             table.setArea(tableArea);
         }
 
@@ -4221,6 +4353,7 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet, OoxmlSheetEx
      * @param t table to remove
      */
     public void removeTable(XSSFTable t) {
+        String rId = getRelationId(t);
         long id = t.getCTTable().getId();
         Map.Entry<String, XSSFTable> toDelete = null;
 
@@ -4231,6 +4364,19 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet, OoxmlSheetEx
             removeRelation(getRelationById(toDelete.getKey()), true);
             tables.remove(toDelete.getKey());
             toDelete.getValue().onTableDelete();
+            CTTableParts tblParts = worksheet.getTableParts();
+            int matchedPos = -1;
+            if (rId != null) {
+                for (int i = 0; i < tblParts.sizeOfTablePartArray(); i++) {
+                    if (rId.equals(tblParts.getTablePartArray(i).getId())) {
+                        matchedPos = i;
+                        break;
+                    }
+                }
+            }
+            if (matchedPos != -1) {
+                tblParts.removeTablePart(matchedPos);
+            }
         }
     }
 
@@ -4725,8 +4871,7 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet, OoxmlSheetEx
 
         // we use a XmlCursor here to handle oleObject with-/out AlternateContent wrappers
         String xquery = "declare namespace p='"+XSSFRelation.NS_SPREADSHEETML+"' .//p:oleObject";
-        XmlCursor cur = getCTWorksheet().getOleObjects().newCursor();
-        try {
+        try (XmlCursor cur = getCTWorksheet().getOleObjects().newCursor()) {
             cur.selectPath(xquery);
             CTOleObject coo = null;
             while (cur.toNextSelection()) {
@@ -4765,12 +4910,156 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet, OoxmlSheetEx
                 }
             }
             return coo;
-        } finally {
-            cur.dispose();
         }
     }
 
     public XSSFHeaderFooterProperties getHeaderFooterProperties() {
         return new XSSFHeaderFooterProperties(getSheetTypeHeaderFooter());
+    }
+
+    /**
+     * Currently, this is for internal use. Overrides the default dimensions of the sheet.
+     * @param dimension {@link CellRangeAddress}, <code>null</code> removes the existing override
+     * @since POI 5.2.3
+     */
+    @Beta
+    public void setDimensionOverride(CellRangeAddress dimension) {
+        this.dimensionOverride = dimension;
+    }
+
+    static void cloneTables(XSSFSheet sheet) {
+        for (XSSFTable table : sheet.getTables()) {
+
+            // clone table; XSSFTable.setArea fails and throws exception for too small tables
+            XSSFTable clonedTable = null;
+            if (table.supportsAreaReference(table.getArea())) {
+                clonedTable = sheet.createTable(table.getArea());
+            }
+
+            if (clonedTable != null) {
+                clonedTable.updateHeaders();
+
+                // clone style
+                clonedTable.setStyleName(table.getStyleName());
+                XSSFTableStyleInfo style = (XSSFTableStyleInfo)table.getStyle();
+                XSSFTableStyleInfo clonedStyle = (XSSFTableStyleInfo)clonedTable.getStyle();
+                if (style != null && clonedStyle != null) {
+                    clonedStyle.setShowColumnStripes(style.isShowColumnStripes());
+                    clonedStyle.setShowRowStripes(style.isShowRowStripes());
+                    clonedStyle.setFirstColumn(style.isShowFirstColumn());
+                    clonedStyle.setLastColumn(style.isShowLastColumn());
+                }
+
+                //clone autofilter
+                clonedTable.getCTTable().setAutoFilter(table.getCTTable().getAutoFilter());
+
+                //clone totalsrow
+                int totalsRowCount = table.getTotalsRowCount();
+                if (totalsRowCount == 1) { // never seen more than one totals row
+                    XSSFRow totalsRow = sheet.getRow(clonedTable.getEndCellReference().getRow());
+                    if (clonedTable.getCTTable().getTableColumns() != null
+                            && !clonedTable.getCTTable().getTableColumns().getTableColumnList().isEmpty()) {
+                        clonedTable.getCTTable().setTotalsRowCount(totalsRowCount);
+                        for (int i = 0; i < clonedTable.getCTTable().getTableColumns().getTableColumnList().size(); i++) {
+                            CTTableColumn tableCol = table.getCTTable().getTableColumns().getTableColumnList().get(i);
+                            CTTableColumn clonedTableCol = clonedTable.getCTTable().getTableColumns().getTableColumnList().get(i);
+                            clonedTableCol.setTotalsRowFunction(tableCol.getTotalsRowFunction());
+                            int intTotalsRowFunction = clonedTableCol.getTotalsRowFunction().intValue();
+                            sheet.getWorkbook().setCellFormulaValidation(false);
+                            if (intTotalsRowFunction == 10) { //custom
+                                CTTableFormula totalsRowFormula = tableCol.getTotalsRowFormula();
+                                clonedTableCol.setTotalsRowFormula(totalsRowFormula);
+                                totalsRow.getCell(clonedTable.getStartCellReference().getCol()+i).setCellFormula(totalsRowFormula.getStringValue());
+                            } else if (intTotalsRowFunction == 1) { //none
+                                //totalsRow.getCell(clonedTable.getStartCellReference().getCol()+i).setBlank();
+                            } else {
+                                String subtotalFormulaStart = getSubtotalFormulaStartFromTotalsRowFunction(intTotalsRowFunction);
+                                if (subtotalFormulaStart != null)
+                                    totalsRow.getCell(clonedTable.getStartCellReference().getCol()+i).setCellFormula(subtotalFormulaStart + "," + clonedTable.getName() +"[" + clonedTableCol.getName()+ "])");
+                            }
+                        }
+                    }
+                }
+
+                // clone calculated column formulas
+                if (clonedTable.getCTTable().getTableColumns() != null
+                        && !clonedTable.getCTTable().getTableColumns().getTableColumnList().isEmpty()) {
+                    clonedTable.getCTTable().setTotalsRowCount(totalsRowCount);
+                    for (int i = 0; i < clonedTable.getCTTable().getTableColumns().getTableColumnList().size(); i++) {
+                        CTTableColumn tableCol = table.getCTTable().getTableColumns().getTableColumnList().get(i);
+                        CTTableColumn clonedTableCol = clonedTable.getCTTable().getTableColumns().getTableColumnList().get(i);
+                        if (tableCol.getCalculatedColumnFormula() != null) {
+                            clonedTableCol.setCalculatedColumnFormula(tableCol.getCalculatedColumnFormula());
+                            CTTableFormula calculatedColumnFormula = clonedTableCol.getCalculatedColumnFormula();
+                            String formula = tableCol.getCalculatedColumnFormula().getStringValue();
+                            String clonedFormula = formula.replace(table.getName(), clonedTable.getName());
+                            calculatedColumnFormula.setStringValue(clonedFormula);
+                            int rFirst = clonedTable.getStartCellReference().getRow() + clonedTable.getHeaderRowCount();
+                            int rLast = clonedTable.getEndCellReference().getRow() - clonedTable.getTotalsRowCount();
+                            int c = clonedTable.getStartCellReference().getCol() + i;
+                            sheet.getWorkbook().setCellFormulaValidation(false);
+                            for (int r = rFirst; r <= rLast; r++) {
+                                XSSFRow row = sheet.getRow(r);
+                                if (row == null) row = sheet.createRow(r);
+                                XSSFCell cell = row.getCell(c, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+                                cell.setCellFormula(clonedFormula);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // remove old table
+            sheet.removeTable(table);
+        }
+    }
+
+    private static String getSubtotalFormulaStartFromTotalsRowFunction(int intTotalsRowFunction) {
+        final int INT_NONE = 1;
+        final int INT_SUM = 2;
+        final int INT_MIN = 3;
+        final int INT_MAX = 4;
+        final int INT_AVERAGE = 5;
+        final int INT_COUNT = 6;
+        final int INT_COUNT_NUMS = 7;
+        final int INT_STD_DEV = 8;
+        final int INT_VAR = 9;
+        final int INT_CUSTOM = 10;
+        String subtotalFormulaStart = null;
+        switch (intTotalsRowFunction) {
+            case INT_NONE:
+                subtotalFormulaStart = null;
+                break;
+            case INT_SUM:
+                subtotalFormulaStart = "SUBTOTAL(109";
+                break;
+            case INT_MIN:
+                subtotalFormulaStart = "SUBTOTAL(105";
+                break;
+            case INT_MAX:
+                subtotalFormulaStart = "SUBTOTAL(104";
+                break;
+            case INT_AVERAGE:
+                subtotalFormulaStart = "SUBTOTAL(101";
+                break;
+            case INT_COUNT:
+                subtotalFormulaStart = "SUBTOTAL(103";
+                break;
+            case INT_COUNT_NUMS:
+                subtotalFormulaStart = "SUBTOTAL(102";
+                break;
+            case INT_STD_DEV:
+                subtotalFormulaStart = "SUBTOTAL(107";
+                break;
+            case INT_VAR:
+                subtotalFormulaStart = "SUBTOTAL(110";
+                break;
+            case INT_CUSTOM:
+                subtotalFormulaStart = null;
+                break;
+            default:
+                subtotalFormulaStart = null;
+        }
+        return subtotalFormulaStart;
     }
 }

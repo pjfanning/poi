@@ -136,6 +136,8 @@ public class SXSSFWorkbook implements Workbook {
      */
     protected Zip64Mode zip64Mode = Zip64Mode.Always;
 
+    private boolean shouldCalculateSheetDimensions = true;
+
     /**
      * Construct a new workbook with default row window size
      */
@@ -311,6 +313,7 @@ public class SXSSFWorkbook implements Workbook {
     }
 
     /**
+     * Sets the <a href="https://commons.apache.org/proper/commons-compress/apidocs/org/apache/commons/compress/archivers/zip/Zip64Mode.html">Zip64 Mode</a>
      * @param zip64Mode {@link Zip64Mode}
      *
      * @since 4.1.0
@@ -338,7 +341,7 @@ public class SXSSFWorkbook implements Workbook {
      *   If the "compress" flag is set to <code>true</code> then the temporary XML is gzipped.
      * </p>
      * <p>
-     *     Please note the the "compress" option may cause performance penalty.
+     *     Please note the "compress" option may cause performance penalty.
      * </p>
      * <p>
      *     Setting this option only affects compression for subsequent <code>createSheet()</code>
@@ -348,6 +351,24 @@ public class SXSSFWorkbook implements Workbook {
      */
     public void setCompressTempFiles(boolean compress) {
         _compressTmpFiles = compress;
+    }
+
+    /**
+     * @param shouldCalculateSheetDimensions defaults to <code>true</code>, set to <code>false</code> if
+     *                                       the calculated dimensions are causing trouble
+     * @since POI 5.2.3
+     */
+    public void setShouldCalculateSheetDimensions(boolean shouldCalculateSheetDimensions) {
+        this.shouldCalculateSheetDimensions = shouldCalculateSheetDimensions;
+    }
+
+    /**
+     * @return shouldCalculateSheetDimensions defaults to <code>true</code>, set to <code>false</code> if
+     * the calculated dimensions are causing trouble
+     * @since POI 5.2.3
+     */
+    public boolean shouldCalculateSheetDimensions() {
+        return shouldCalculateSheetDimensions;
     }
 
     @Internal
@@ -704,7 +725,7 @@ public class SXSSFWorkbook implements Workbook {
         try {
             sxSheet = new SXSSFSheet(this,xSheet);
         } catch (IOException ioe) {
-            throw new RuntimeException(ioe);
+            throw new IllegalStateException(ioe);
         }
         registerSheetMapping(sxSheet,xSheet);
         return sxSheet;
@@ -734,7 +755,7 @@ public class SXSSFWorkbook implements Workbook {
     @Override
     @NotImplemented
     public Sheet cloneSheet(int sheetNum) {
-        throw new RuntimeException("Not Implemented");
+        throw new IllegalStateException("Not Implemented");
     }
 
 
@@ -970,8 +991,10 @@ public class SXSSFWorkbook implements Workbook {
             }
 
             //Substitute the template entries with the generated sheet data files
-            try (ZipSecureFile zf = new ZipSecureFile(tmplFile);
-                 ZipFileZipEntrySource source = new ZipFileZipEntrySource(zf)) {
+            try (
+                    ZipSecureFile zf = new ZipSecureFile(tmplFile);
+                    ZipFileZipEntrySource source = new ZipFileZipEntrySource(zf)
+            ) {
                 injectData(source, stream);
             }
         } finally {
@@ -1002,8 +1025,9 @@ public class SXSSFWorkbook implements Workbook {
             //Substitute the template entries with the generated sheet data files
             try (
                     InputStream is = bos.toInputStream();
+                    ZipArchiveInputStream zis = new ZipArchiveInputStream(is);
                     ZipInputStreamZipEntrySource source = new ZipInputStreamZipEntrySource(
-                        new ZipArchiveThresholdInputStream(new ZipArchiveInputStream(is)))
+                        new ZipArchiveThresholdInputStream(zis))
             ) {
                 injectData(source, stream);
             }
@@ -1011,8 +1035,8 @@ public class SXSSFWorkbook implements Workbook {
     }
 
     protected void flushSheets() throws IOException {
-        for (SXSSFSheet sheet : _xFromSxHash.values())
-        {
+        for (SXSSFSheet sheet : _xFromSxHash.values()) {
+            sheet.deriveDimension();
             sheet.flushRows();
         }
     }
@@ -1291,12 +1315,12 @@ public class SXSSFWorkbook implements Workbook {
      * @param name The name the workbook will be referenced as in formulas
      * @param workbook The open workbook to fetch the link required information from
      *
-     * @throws RuntimeException stating that this method is not implemented yet.
+     * @throws IllegalStateException stating that this method is not implemented yet.
      */
     @Override
     @NotImplemented
     public int linkExternalWorkbook(String name, Workbook workbook) {
-        throw new RuntimeException("Not Implemented");
+        throw new IllegalStateException("Not Implemented");
     }
 
     /**

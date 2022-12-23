@@ -17,6 +17,7 @@
 
 package org.apache.poi.xwpf.usermodel;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.apache.poi.POIDataSamples;
+import org.apache.poi.common.usermodel.PictureType;
 import org.apache.poi.ooxml.POIXMLDocumentPart;
 import org.apache.poi.ooxml.POIXMLProperties;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
@@ -68,6 +70,8 @@ public final class TestXWPFDocument {
             assertNotNull(xml1.getDocument());
             assertNotNull(xml1.getDocument().getBody());
             assertNotNull(xml1.getStyle());
+            assertNotNull(xml1.getTheme());
+            assertEquals("Cambria", xml1.getTheme().getMajorFont());
         }
 
         // Complex file
@@ -153,9 +157,21 @@ public final class TestXWPFDocument {
             assertNotNull(relationById);
             byte[] newJpeg = relationById.getData();
             assertEquals(newJpeg.length, jpeg.length);
-            for (int i = 0; i < jpeg.length; i++) {
-                assertEquals(newJpeg[i], jpeg[i]);
-            }
+            assertArrayEquals(jpeg, newJpeg);
+        }
+    }
+
+    @Test
+    void testAddPicture2() throws IOException, InvalidFormatException {
+        try (XWPFDocument doc = XWPFTestDataSamples.openSampleDocument("sample.docx")) {
+            byte[] data = XWPFTestDataSamples.getImage("nature1.png");
+            String relationId = doc.addPictureData(data, PictureType.PNG);
+
+            XWPFPictureData relationById = (XWPFPictureData) doc.getRelationById(relationId);
+            assertNotNull(relationById);
+            byte[] newData = relationById.getData();
+            assertEquals(newData.length, data.length);
+            assertArrayEquals(data, newData);
         }
     }
 
@@ -301,7 +317,7 @@ public final class TestXWPFDocument {
     void testFindPackagePictureData() throws IOException {
         try (XWPFDocument doc = XWPFTestDataSamples.openSampleDocument("issue_51265_1.docx")) {
             byte[] nature1 = XWPFTestDataSamples.getImage("nature1.gif");
-            XWPFPictureData part = doc.findPackagePictureData(nature1, Document.PICTURE_TYPE_GIF);
+            XWPFPictureData part = doc.findPackagePictureData(nature1);
             assertNotNull(part);
             assertTrue(doc.getAllPictures().contains(part));
             assertTrue(doc.getAllPackagePictures().contains(part));

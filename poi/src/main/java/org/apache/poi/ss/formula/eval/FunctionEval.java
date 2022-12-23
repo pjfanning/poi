@@ -288,11 +288,11 @@ public final class FunctionEval {
         retval[305] = new Sumx2py2();
         // 306: CHITEST
         retval[307] = Correl.instance;
-        // 308: COVAR
-        // 309: FORECAST
+        retval[308] = Covar.instanceP;
+        retval[309] = Forecast.instance;
         // 310: FTEST
         retval[311] = new Intercept();
-        // 312: PEARSON
+        retval[312] = Correl.instance;
         // 313: RSQ
         // 314: STEYX
         retval[315] = new Slope();
@@ -428,7 +428,7 @@ public final class FunctionEval {
         Collection<String> lst = new TreeSet<>();
         for (int i = 0; i < functions.length; i++) {
             Function func = functions[i];
-            if (func != null && (func instanceof NotImplementedFunction)) {
+            if ((func instanceof NotImplementedFunction)) {
                 FunctionMetadata metaData = FunctionMetadataRegistry.getFunctionByIndex(i);
                 lst.add(metaData.getName());
             }

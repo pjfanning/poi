@@ -25,9 +25,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
-import org.apache.poi.ss.formula.OperationEvaluationContext;
 import org.apache.poi.ss.formula.eval.ErrorEval;
-import org.apache.poi.ss.formula.eval.ValueEval;
 import org.apache.poi.ss.formula.functions.FreeRefFunction;
 import org.apache.poi.ss.formula.udf.UDFFinder;
 import org.apache.poi.ss.usermodel.Row;
@@ -53,12 +51,7 @@ public class SettingExternalFunction {
             // dummy function that returns NA
             // don't care about the implementation, we are not interested in evaluation
             // and this method will never be called
-            FreeRefFunction NA = new FreeRefFunction() {
-                @Override
-                public ValueEval evaluate(ValueEval[] args, OperationEvaluationContext ec) {
-                    return ErrorEval.NA;
-                }
-            };
+            FreeRefFunction NA = (args, ec) -> ErrorEval.NA;
             _functionsByName = new HashMap<>();
             _functionsByName.put("BDP", NA);
             _functionsByName.put("BDH", NA);

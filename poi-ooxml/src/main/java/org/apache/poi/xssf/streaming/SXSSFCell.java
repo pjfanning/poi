@@ -52,11 +52,25 @@ public class SXSSFCell extends CellBase {
     private CellStyle _style;
     private Property _firstProperty;
 
-    public SXSSFCell(SXSSFRow row, CellType cellType)
+    private int _columnIndex = -1;
+
+    public SXSSFCell(final SXSSFRow row, final CellType cellType)
     {
-        _row=row;
+        _row = row;
         _value = new BlankValue();
         setType(cellType);
+    }
+
+    /**
+     * @param row the {@link SXSSFRow}
+     * @param cellType the {@link CellType}
+     * @param columnIndex the column index (zero based)
+     * @since POI 5.2.4
+     */
+    public SXSSFCell(final SXSSFRow row, final CellType cellType, final int columnIndex)
+    {
+        this(row, cellType);
+        _columnIndex = columnIndex;
     }
 
     /**
@@ -75,6 +89,9 @@ public class SXSSFCell extends CellBase {
     @Override
     public int getColumnIndex()
     {
+        if (_columnIndex >= 0) {
+            return _columnIndex;
+        }
         return _row.getCellIndex(this);
     }
 
@@ -139,6 +156,7 @@ public class SXSSFCell extends CellBase {
      * @return one of ({@link CellType#NUMERIC}, {@link CellType#STRING},
      *     {@link CellType#BOOLEAN}, {@link CellType#ERROR}) depending
      * on the cached value of the formula
+     * @throws IllegalStateException if cell is not a formula cell
      */
     @Override
     public CellType getCachedFormulaResultType() {
@@ -253,7 +271,7 @@ public class SXSSFCell extends CellBase {
                     _value = new ErrorFormulaValue(formula, getErrorCellValue());
                     break;
                 default:
-                    throw new IllegalStateException("Cannot set a formula for a cell of type " + getCellType());
+                    throw new FormulaParseException("Cannot set a formula for a cell of type " + getCellType());
             }
         }
     }
@@ -569,19 +587,31 @@ public class SXSSFCell extends CellBase {
     /**
      * Return the cell's style.
      *
-     * @return the cell's style. Always not-null. Default cell style has zero index and can be obtained as
+     * @return the cell's style. Never null. Default cell style has zero index and can be obtained as
      * <code>workbook.getCellStyleAt(0)</code>
      * @see org.apache.poi.ss.usermodel.Workbook#getCellStyleAt(int)
      */
     @Override
     public CellStyle getCellStyle()
     {
-        if(_style == null){
-            SXSSFWorkbook wb = (SXSSFWorkbook)getRow().getSheet().getWorkbook();
-            return wb.getCellStyleAt(0);
-        } else {
-            return _style;
+        if (_style == null) {
+            CellStyle style = getDefaultCellStyleFromColumn();
+            if (style == null) {
+                SXSSFWorkbook wb = getSheet().getWorkbook();
+                style = wb.getCellStyleAt(0);
+            }
+            _style = style;
         }
+        return _style;
+    }
+
+    private CellStyle getDefaultCellStyleFromColumn() {
+        CellStyle style = null;
+        SXSSFSheet sheet = getSheet();
+        if (sheet != null) {
+            style = sheet.getColumnStyle(getColumnIndex());
+        }
+        return style;
     }
 
     /**

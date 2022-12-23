@@ -30,21 +30,15 @@ import java.util.List;
 
 import javax.xml.namespace.QName;
 
+import org.apache.poi.common.usermodel.PictureType;
 import org.apache.poi.ooxml.POIXMLException;
 import org.apache.poi.ooxml.util.DocumentHelper;
 import org.apache.poi.ooxml.util.POIXMLUnits;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
-import org.apache.poi.util.HexDump;
-import org.apache.poi.util.Internal;
-import org.apache.poi.util.Removal;
-import org.apache.poi.util.Units;
+import org.apache.poi.util.*;
 import org.apache.poi.wp.usermodel.CharacterRun;
-import org.apache.xmlbeans.SimpleValue;
-import org.apache.xmlbeans.XmlCursor;
-import org.apache.xmlbeans.XmlException;
-import org.apache.xmlbeans.XmlObject;
-import org.apache.xmlbeans.XmlString;
-import org.apache.xmlbeans.XmlToken;
+import org.apache.poi.xssf.usermodel.XSSFRelation;
+import org.apache.xmlbeans.*;
 import org.apache.xmlbeans.impl.values.XmlAnyTypeImpl;
 import org.openxmlformats.schemas.drawingml.x2006.chart.CTChart;
 import org.openxmlformats.schemas.drawingml.x2006.main.CTBlip;
@@ -67,6 +61,7 @@ import org.openxmlformats.schemas.officeDocument.x2006.sharedTypes.STHexColorRGB
 import org.openxmlformats.schemas.officeDocument.x2006.sharedTypes.STOnOff1;
 import org.openxmlformats.schemas.officeDocument.x2006.sharedTypes.STVerticalAlignRun;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.*;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.Text;
 import org.xml.sax.InputSource;
@@ -112,7 +107,7 @@ public class XWPFRun implements ISDTContents, IRunElement, CharacterRun {
         pictTextObjs.addAll(Arrays.asList(r.getPictArray()));
         pictTextObjs.addAll(Arrays.asList(r.getDrawingArray()));
         for (XmlObject o : pictTextObjs) {
-            XmlObject[] ts = o.selectPath("declare namespace w='http://schemas.openxmlformats.org/wordprocessingml/2006/main' .//w:t");
+            XmlObject[] ts = o.selectPath("declare namespace w='" + XSSFRelation.NS_WORDPROCESSINGML + "' .//w:t");
             for (XmlObject t : ts) {
                 NodeList kids = t.getDomNode().getChildNodes();
                 for (int n = 0; n < kids.getLength(); n++) {
@@ -155,10 +150,10 @@ public class XWPFRun implements ISDTContents, IRunElement, CharacterRun {
         String text = xs.getStringValue();
         if (text != null && text.length() >= 1
                 && (Character.isWhitespace(text.charAt(0)) || Character.isWhitespace(text.charAt(text.length()-1)))) {
-            XmlCursor c = xs.newCursor();
-            c.toNextToken();
-            c.insertAttributeWithValue(new QName("http://www.w3.org/XML/1998/namespace", "space"), "preserve");
-            c.dispose();
+            try (XmlCursor c = xs.newCursor()) {
+                c.toNextToken();
+                c.insertAttributeWithValue(new QName("http://www.w3.org/XML/1998/namespace", "space"), "preserve");
+            }
         }
     }
 
@@ -238,8 +233,7 @@ public class XWPFRun implements ISDTContents, IRunElement, CharacterRun {
      */
     public String getLang() {
         CTRPr pr = getRunProperties(false);
-        Object lang = (pr == null || pr.sizeOfLangArray() == 0) ? null : pr.getLangArray(0).getVal();
-        return (String) lang;
+        return (pr == null || pr.sizeOfLangArray() == 0) ? null : pr.getLangArray(0).getVal();
     }
 
     /**
@@ -298,7 +292,7 @@ public class XWPFRun implements ISDTContents, IRunElement, CharacterRun {
     }
 
     /**
-     * Get text color. The returned value is a string in the hex form "RRGGBB".
+     * Get text color. The returned value is a string in the hex form "RRGGBB". This can be <code>null</code>.
      */
     public String getColor() {
         String color = null;
@@ -962,10 +956,10 @@ public class XWPFRun implements ISDTContents, IRunElement, CharacterRun {
     }
 
     /**
-     *
+     * Not yet implemented.
      */
     public void removeBreak() {
-        // TODO
+        // TODO not yet implemented
     }
 
     /**
@@ -1066,10 +1060,32 @@ public class XWPFRun implements ISDTContents, IRunElement, CharacterRun {
      * @see org.apache.poi.xwpf.usermodel.Document#PICTURE_TYPE_PICT
      * @see org.apache.poi.xwpf.usermodel.Document#PICTURE_TYPE_JPEG
      * @see org.apache.poi.xwpf.usermodel.Document#PICTURE_TYPE_PNG
+     * @see org.apache.poi.xwpf.usermodel.Document#PICTURE_TYPE_GIF
      * @see org.apache.poi.xwpf.usermodel.Document#PICTURE_TYPE_DIB
+     * @see #addPicture(InputStream, PictureType, String, int, int)
      */
     public XWPFPicture addPicture(InputStream pictureData, int pictureType, String filename, int width, int height)
             throws InvalidFormatException, IOException {
+        return addPicture(pictureData, PictureType.findByOoxmlId(pictureType), filename, width, height);
+    }
+
+    /**
+     * Adds a picture to the run. This method handles
+     * attaching the picture data to the overall file.
+     *
+     * @param pictureData The raw picture data
+     * @param pictureType The {@link PictureType} of the picture
+     * @param width       width in EMUs. To convert to / from points use {@link org.apache.poi.util.Units}
+     * @param height      height in EMUs. To convert to / from points use {@link org.apache.poi.util.Units}
+     * @throws InvalidFormatException If the format of the picture is not known.
+     * @throws IOException            If reading the picture-data from the stream fails.
+     * @since POI 5.2.3
+     */
+    public XWPFPicture addPicture(InputStream pictureData, PictureType pictureType, String filename, int width, int height)
+            throws InvalidFormatException, IOException {
+        if (pictureType == null) {
+            throw new InvalidFormatException("pictureType is not supported");
+        }
         String relationId;
         XWPFPictureData picData;
 
@@ -1279,19 +1295,18 @@ public class XWPFRun implements ISDTContents, IRunElement, CharacterRun {
 
         // Grab the text and tabs of the text run
         // Do so in a way that preserves the ordering
-        XmlCursor c = run.newCursor();
-        c.selectPath("./*");
-        while (c.toNextSelection()) {
-            XmlObject o = c.getObject();
-            if (o instanceof CTRuby) {
-                handleRuby(o, text, false);
-                continue;
+        try (XmlCursor c = run.newCursor()) {
+            c.selectPath("./*");
+            while (c.toNextSelection()) {
+                XmlObject o = c.getObject();
+                if (o instanceof CTRuby) {
+                    handleRuby(o, text, false);
+                    continue;
+                }
+                _getText(o, text);
             }
-            _getText(o, text);
         }
-        c.dispose();
         return text.toString();
-
     }
 
     /**
@@ -1302,19 +1317,19 @@ public class XWPFRun implements ISDTContents, IRunElement, CharacterRun {
 
         // Grab the text and tabs of the text run
         // Do so in a way that preserves the ordering
-        XmlCursor c = run.newCursor();
-        c.selectPath("./*");
-        while (c.toNextSelection()) {
-            XmlObject o = c.getObject();
-            if (o instanceof CTRuby) {
-                handleRuby(o, text, true);
+        try (XmlCursor c = run.newCursor()) {
+            c.selectPath("./*");
+            while (c.toNextSelection()) {
+                XmlObject o = c.getObject();
+                if (o instanceof CTRuby) {
+                    handleRuby(o, text, true);
+                }
+            }
+            // Any picture text?
+            if (pictureText != null && pictureText.length() > 0) {
+                text.append("\n").append(pictureText).append("\n");
             }
         }
-        // Any picture text?
-        if (pictureText != null && pictureText.length() > 0) {
-            text.append("\n").append(pictureText).append("\n");
-        }
-        c.dispose();
         return text.toString();
     }
 
@@ -1324,45 +1339,53 @@ public class XWPFRun implements ISDTContents, IRunElement, CharacterRun {
      * @param extractPhonetic extract the phonetic (rt) component or the base component
      */
     private void handleRuby(XmlObject rubyObj, StringBuilder text, boolean extractPhonetic) {
-        XmlCursor c = rubyObj.newCursor();
+        try (XmlCursor c = rubyObj.newCursor()) {
+            //according to the spec, a ruby object
+            //has the phonetic (rt) first, then the actual text (base)
+            //second.
 
-        //according to the spec, a ruby object
-        //has the phonetic (rt) first, then the actual text (base)
-        //second.
-
-        c.selectPath(".//*");
-        boolean inRT = false;
-        boolean inBase = false;
-        while (c.toNextSelection()) {
-            XmlObject o = c.getObject();
-            if (o instanceof CTRubyContent) {
-                String tagName = o.getDomNode().getNodeName();
-                if ("w:rt".equals(tagName)) {
-                    inRT = true;
-                } else if ("w:rubyBase".equals(tagName)) {
-                    inRT = false;
-                    inBase = true;
-                }
-            } else {
-                if (extractPhonetic && inRT) {
-                    _getText(o, text);
-                } else if (!extractPhonetic && inBase) {
-                    _getText(o, text);
+            c.selectPath(".//*");
+            boolean inRT = false;
+            boolean inBase = false;
+            while (c.toNextSelection()) {
+                XmlObject o = c.getObject();
+                if (o instanceof CTRubyContent) {
+                    final Node node = o.getDomNode();
+                    if (XSSFRelation.NS_WORDPROCESSINGML.equals(node.getNamespaceURI())) {
+                        final String tagName = node.getLocalName();
+                        if ("rt".equals(tagName)) {
+                            inRT = true;
+                        } else if ("rubyBase".equals(tagName)) {
+                            inRT = false;
+                            inBase = true;
+                        }
+                    }
+                } else {
+                    if (extractPhonetic && inRT) {
+                        _getText(o, text);
+                    } else if (!extractPhonetic && inBase) {
+                        _getText(o, text);
+                    }
                 }
             }
         }
-        c.dispose();
     }
 
     private void _getText(XmlObject o, StringBuilder text) {
 
         if (o instanceof CTText) {
-            String tagName = o.getDomNode().getNodeName();
+            final Node node = o.getDomNode();
             // Field Codes (w:instrText, defined in spec sec. 17.16.23)
             //  come up as instances of CTText, but we don't want them
             //  in the normal text output
-            if (!"w:instrText".equals(tagName)) {
-                text.append(((CTText) o).getStringValue());
+            if (!("instrText".equals(node.getLocalName()) && XSSFRelation.NS_WORDPROCESSINGML.equals(node.getNamespaceURI()))) {
+                String textValue = ((CTText) o).getStringValue();
+                if (textValue != null) {
+                    if (isCapitalized() || isSmallCaps()) {
+                        textValue = textValue.toUpperCase(LocaleUtil.getUserLocale());
+                    }
+                    text.append(textValue);
+                }
             }
         }
 
@@ -1372,7 +1395,9 @@ public class XWPFRun implements ISDTContents, IRunElement, CharacterRun {
             if (ctfldChar.getFldCharType() == STFldCharType.BEGIN) {
                 if (ctfldChar.getFfData() != null) {
                     for (CTFFCheckBox checkBox : ctfldChar.getFfData().getCheckBoxList()) {
-                        text.append((checkBox.getDefault() != null && POIXMLUnits.parseOnOff(checkBox.getDefault().xgetVal())) ? "|X|" : "|_|");
+                        String textValue = checkBox.getDefault() != null && POIXMLUnits.parseOnOff(checkBox.getDefault().xgetVal()) ?
+                                "|X|" : "|_|";
+                        text.append(textValue);
                     }
                 }
             }
@@ -1390,15 +1415,17 @@ public class XWPFRun implements ISDTContents, IRunElement, CharacterRun {
             //  definitions around line 5642 of the XSDs
             // This bit works around it, and replicates the above
             //  rules for that case
-            String tagName = o.getDomNode().getNodeName();
-            if ("w:tab".equals(tagName) || "tab".equals(tagName)) {
-                text.append('\t');
-            }
-            if ("w:br".equals(tagName) || "br".equals(tagName)) {
-                text.append('\n');
-            }
-            if ("w:cr".equals(tagName) || "cr".equals(tagName)) {
-                text.append('\n');
+            final Node node = o.getDomNode();
+            if (XSSFRelation.NS_WORDPROCESSINGML.equals(node.getNamespaceURI())) {
+                switch (node.getLocalName()) {
+                    case "tab":
+                        text.append('\t');
+                        break;
+                    case "br":
+                    case "cr":
+                        text.append('\n');
+                        break;
+                }
             }
         }
         if (o instanceof CTFtnEdnRef) {
@@ -1474,9 +1501,25 @@ public class XWPFRun implements ISDTContents, IRunElement, CharacterRun {
      *
      * @return {@link STHighlightColor} for the run.
      * @since 4.0.0
+     * @deprecated use {@link #getTextHighlightColor()} instead
      */
+    @Deprecated
+    @Removal(version = "7.0.0")
     public STHighlightColor.Enum getTextHightlightColor() {
-        CTRPr pr = getRunProperties(true);
+        return getTextHighlightColor();
+    }
+
+    /**
+     * Gets the highlight color for the run
+     *
+     * @return {@link STHighlightColor} for the run. The default is <code>NONE</code>;
+     * @since 5.2.3
+     */
+    public STHighlightColor.Enum getTextHighlightColor() {
+        CTRPr pr = getRunProperties(false);
+        if (pr == null) {
+            return STHighlightColor.NONE;
+        }
         CTHighlight highlight = pr.sizeOfHighlightArray() > 0 ? pr.getHighlightArray(0) : pr.addNewHighlight();
         STHighlightColor color = highlight.xgetVal();
         if (color == null) {
@@ -1493,7 +1536,7 @@ public class XWPFRun implements ISDTContents, IRunElement, CharacterRun {
      * @since 4.0.0
      */
     public boolean isVanish() {
-        CTRPr pr = getRunProperties(true);
+        CTRPr pr = getRunProperties(false);
         return pr != null && pr.sizeOfVanishArray() > 0 && isCTOnOff(pr.getVanishArray(0));
     }
 
@@ -1512,11 +1555,15 @@ public class XWPFRun implements ISDTContents, IRunElement, CharacterRun {
     /**
      * Get the vertical alignment value
      *
-     * @return {@link STVerticalAlignRun.Enum} value (see 22.9.2.17 ST_VerticalAlignRun (Vertical Positioning Location))
+     * @return {@link STVerticalAlignRun.Enum} value (see 22.9.2.17 ST_VerticalAlignRun (Vertical Positioning Location)).
+     * The default is <code>BASELINE</code>.
      * @since 4.0.0
      */
     public STVerticalAlignRun.Enum getVerticalAlignment() {
-        CTRPr pr = getRunProperties(true);
+        CTRPr pr = getRunProperties(false);
+        if (pr == null) {
+            return STVerticalAlignRun.BASELINE;
+        }
         CTVerticalAlignRun vertAlign = pr.sizeOfVertAlignArray() > 0 ? pr.getVertAlignArray(0) : pr.addNewVertAlign();
         STVerticalAlignRun.Enum val = vertAlign.getVal();
         if (val == null) {
@@ -1551,10 +1598,14 @@ public class XWPFRun implements ISDTContents, IRunElement, CharacterRun {
      * Get the emphasis mark value for the run.
      *
      * @return {@link STEm.Enum} emphasis mark type enumeration. See 17.18.24 ST_Em (Emphasis Mark Type).
+     * The default is <code>NONE</code>.
      * @since 4.0.0
      */
     public STEm.Enum getEmphasisMark() {
-        CTRPr pr = getRunProperties(true);
+        CTRPr pr = getRunProperties(false);
+        if (pr == null) {
+            return STEm.NONE;
+        }
         CTEm emphasis = pr.sizeOfEmArray() > 0 ? pr.getEmArray(0) : pr.addNewEm();
 
         STEm.Enum val = emphasis.getVal();

@@ -190,7 +190,7 @@ public final class ToHtml {
             return;
         }
 
-        try (PrintWriter pw = new PrintWriter(args[1], "UTF-8")) {
+        try (PrintWriter pw = new PrintWriter(args[1], StandardCharsets.UTF_8.name())) {
             ToHtml toHtml = create(args[0], pw);
             toHtml.setCompleteHTML(true);
             toHtml.printPage();
@@ -320,7 +320,7 @@ public final class ToHtml {
 
     private String styleName(CellStyle style) {
         if (style == null) {
-            style = wb.getCellStyleAt((short) 0);
+            style = wb.getCellStyleAt(0);
         }
         StringBuilder sb = new StringBuilder();
         try (Formatter fmt = new Formatter(sb, Locale.ROOT)) {

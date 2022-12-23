@@ -17,12 +17,6 @@
 
 package org.apache.poi.xssf.usermodel;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -45,6 +39,9 @@ import org.junit.jupiter.api.Test;
 import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTTable;
 import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTTableColumn;
 import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTTableStyleInfo;
+import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTWorksheet;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public final class TestXSSFTable {
 
@@ -700,6 +697,90 @@ public final class TestXSSFTable {
                 List<XSSFTableColumn> tabColumns = wb2Table.getColumns();
                 assertEquals(2, tabColumns.size());
                 assertEquals("Column1_x000a_with a line break", tabColumns.get(0).getName());
+            }
+        }
+    }
+
+    @Test
+    void bug66211() throws IOException {
+        try (XSSFWorkbook wb = XSSFTestDataSamples.openSampleWorkbook("table-sample.xlsx")) {
+            XSSFTable table = wb.getTable("Tabelle1");
+            assertEquals(1, table.getHeaderRowCount());
+            assertEquals(3, table.getStartRowIndex());
+            List<XSSFTableColumn> cols = table.getColumns();
+            assertEquals(5, cols.size());
+            assertEquals("Field 1", cols.get(0).getName());
+            XSSFSheet sheet = table.getXSSFSheet();
+            XSSFRow headerRow = sheet.getRow(3);
+            headerRow.getCell(2).setCellValue("Column 1");
+            table.updateHeaders();
+            List<XSSFTableColumn> updatedCols = table.getColumns();
+            assertEquals(5, updatedCols.size());
+            assertEquals("Column 1", updatedCols.get(0).getName());
+            assertEquals(cols.get(1).getName(), updatedCols.get(1).getName());
+            assertEquals(cols.get(2).getName(), updatedCols.get(2).getName());
+            assertEquals(cols.get(3).getName(), updatedCols.get(3).getName());
+            assertEquals(cols.get(4).getName(), updatedCols.get(4).getName());
+        }
+    }
+
+    @Test
+    void bug66212() throws IOException {
+        try (XSSFWorkbook wb = XSSFTestDataSamples.openSampleWorkbook("table-sample.xlsx")) {
+            XSSFTable table = wb.getTable("Tabelle1");
+            XSSFSheet sheet = table.getXSSFSheet();
+            assertEquals(1, sheet.getCTWorksheet().getTableParts().sizeOfTablePartArray());
+            sheet.removeTable(table);
+            assertEquals(0, sheet.getCTWorksheet().getTableParts().sizeOfTablePartArray());
+        }
+    }
+
+    @Test
+    void bug66213() throws IOException {
+        try (XSSFWorkbook wb = XSSFTestDataSamples.openSampleWorkbook("table-sample.xlsx")) {
+            wb.cloneSheet(0, "Test");
+            try (UnsynchronizedByteArrayOutputStream bos = new UnsynchronizedByteArrayOutputStream()) {
+                wb.write(bos);
+                try (XSSFWorkbook wb2 = new XSSFWorkbook(bos.toInputStream())) {
+                    XSSFSheet sheet0 = wb2.getSheetAt(0);
+                    XSSFSheet sheet1 = wb2.getSheetAt(1);
+                    assertEquals(1, sheet0.getTables().size());
+                    assertEquals(1, sheet1.getTables().size());
+                    assertEquals("Tabelle1", sheet0.getTables().get(0).getName());
+                    assertEquals("Table2", sheet1.getTables().get(0).getName());
+                }
+            }
+        }
+    }
+
+    @Test
+    void testCloneConditionalFormattingSamples() throws IOException {
+        try (XSSFWorkbook wb = XSSFTestDataSamples.openSampleWorkbook("ConditionalFormattingSamples.xlsx")) {
+            wb.cloneSheet(0, "Test");
+            try (UnsynchronizedByteArrayOutputStream bos = new UnsynchronizedByteArrayOutputStream()) {
+                wb.write(bos);
+                try (XSSFWorkbook wb2 = new XSSFWorkbook(bos.toInputStream())) {
+                    XSSFSheet sheet0 = wb2.getSheetAt(0);
+                    XSSFSheet sheet1 = wb2.getSheetAt(1);
+                    assertEquals(0, sheet0.getTables().size());
+                    assertEquals(0, sheet1.getTables().size());
+                }
+            }
+        }
+    }
+
+    @Test
+    void testCloneSingleCellTable() throws IOException {
+        try (XSSFWorkbook wb = XSSFTestDataSamples.openSampleWorkbook("SingleCellTable.xlsx")) {
+            wb.cloneSheet(0, "Test");
+            try (UnsynchronizedByteArrayOutputStream bos = new UnsynchronizedByteArrayOutputStream()) {
+                wb.write(bos);
+                try (XSSFWorkbook wb2 = new XSSFWorkbook(bos.toInputStream())) {
+                    XSSFSheet sheet0 = wb2.getSheetAt(0);
+                    XSSFSheet sheet1 = wb2.getSheetAt(1);
+                    assertEquals(1, sheet0.getTables().size());
+                    assertEquals(0, sheet1.getTables().size());
+                }
             }
         }
     }

@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.apache.poi.ss.usermodel.Color;
-import org.apache.poi.util.Removal;
 
 
 /**
@@ -191,11 +190,11 @@ public class HSSFColor implements Color {
         Map<Integer,HSSFColor> result = new HashMap<>(eList.size() * 3 / 2);
 
         for (Map.Entry<HSSFColorPredefined,HSSFColor> colorRef : eList.entrySet()) {
-            Integer index1 = (int)colorRef.getKey().getIndex();
+            Integer index1 = Integer.valueOf(colorRef.getKey().getIndex());
             if (!result.containsKey(index1)) {
                 result.put(index1, colorRef.getValue());
             }
-            Integer index2 = (int)colorRef.getKey().getIndex2();
+            Integer index2 = Integer.valueOf(colorRef.getKey().getIndex2());
             if (index2 != -1 && !result.containsKey(index2)) {
                 result.put(index2, colorRef.getValue());
             }
@@ -232,12 +231,7 @@ public class HSSFColor implements Color {
 
     /**
      * Maps the Enums to the HSSFColor, in cases of user code evaluating the classname
-     *
-     * @deprecated in 3.16 - remove mapping when subclasses are removed and access
-     *  HSSFColorPredefined.values() directly (but exclude AUTOMATIC)
      */
-    @Deprecated
-    @Removal(version="3.18")
     private static synchronized Map<HSSFColorPredefined,HSSFColor> mapEnumToColorClass() {
         if (enumList == null) {
             enumList = new EnumMap<>(HSSFColorPredefined.class);

@@ -51,7 +51,7 @@ import org.openxmlformats.schemas.spreadsheetml.x2006.main.STPatternType;
 
 /**
  *
- * High level representation of the the possible formatting information for the contents of the cells on a sheet in a
+ * High level representation of the possible formatting information for the contents of the cells on a sheet in a
  * SpreadsheetML document.
  *
  * @see org.apache.poi.xssf.usermodel.XSSFWorkbook#createCellStyle()
@@ -830,6 +830,22 @@ public class XSSFCellStyle implements CellStyle, Duplicatable {
     }
 
     /**
+     * Set the background fill color represented as a {@link org.apache.poi.ss.usermodel.Color} value.
+     * <br>
+     * @param color org.apache.poi.ss.usermodel.Color to set
+     * @throws IllegalArgumentException if you provide a <code>Color</code> instance that is not a {@link XSSFColor}
+     * @since POI 5.2.3
+     */
+    @Override
+    public void setFillBackgroundColor(org.apache.poi.ss.usermodel.Color color) {
+        if (color == null || color instanceof XSSFColor) {
+            setFillBackgroundColor((XSSFColor)color);
+        } else {
+            throw new IllegalArgumentException("XSSFCellStyle only accepts XSSFColor instances");
+        }
+    }
+    
+    /**
      * Set the background fill color represented as a indexed color value.
      * <p>
      * For example:
@@ -881,6 +897,22 @@ public class XSSFCellStyle implements CellStyle, Duplicatable {
         }
 
         addFill(ct);
+    }
+ 
+    /**
+     * Set the foreground fill color represented as a {@link org.apache.poi.ss.usermodel.Color} value.
+     * <br>
+     * @param color the color to use
+     * @throws IllegalArgumentException if you provide a <code>Color</code> instance that is not a {@link XSSFColor}
+     * @since POI 5.2.3
+     */
+    @Override
+    public void setFillForegroundColor(org.apache.poi.ss.usermodel.Color color) {
+        if (color == null || color instanceof XSSFColor) {
+            setFillForegroundColor((XSSFColor)color);
+        } else {
+            throw new IllegalArgumentException("XSSFCellStyle only accepts XSSFColor instances");
+        }
     }
 
     /**

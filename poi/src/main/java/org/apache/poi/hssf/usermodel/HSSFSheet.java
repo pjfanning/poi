@@ -69,6 +69,8 @@ import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.DataValidation;
 import org.apache.poi.ss.usermodel.DataValidationHelper;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
+import org.apache.poi.ss.usermodel.PageMargin;
+import org.apache.poi.ss.usermodel.PaneType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -83,6 +85,7 @@ import org.apache.poi.ss.util.SheetUtil;
 import org.apache.poi.util.Beta;
 import org.apache.poi.util.Configurator;
 import org.apache.poi.util.Internal;
+import org.apache.poi.util.Removal;
 
 import static java.lang.System.currentTimeMillis;
 import static org.apache.logging.log4j.util.Unbox.box;
@@ -224,7 +227,7 @@ public final class HSSFSheet implements Sheet {
                     // Excel, OpenOffice.org and GoogleDocs are all OK with this, so POI should be too.
                     if (rowRecordsAlreadyPresent) {
                         // if at least one row record is present, all should be present.
-                        throw new RuntimeException("Unexpected missing row when some rows already present");
+                        throw new IllegalStateException("Unexpected missing row when some rows already present");
                     }*/
 
                     // create the row record on the fly now.
@@ -1307,36 +1310,76 @@ public final class HSSFSheet implements Sheet {
      *
      * @param margin which margin to get
      * @return the size of the margin
+     * @deprecated use {@link #getMargin(PageMargin)}
      */
     @Override
+    @Deprecated
+    @Removal(version = "7.0.0")
     public double getMargin(short margin) {
+        return getMargin(PageMargin.getByShortValue(margin));
+    }
+
+    /**
+     * Gets the size of the margin in inches.
+     *
+     * @param margin which margin to get
+     * @return the size of the margin
+     * @since POI 5.2.3
+     */
+    @Override
+    public double getMargin(PageMargin margin) {
         switch (margin) {
-            case FooterMargin:
+            case FOOTER:
                 return _sheet.getPageSettings().getPrintSetup().getFooterMargin();
-            case HeaderMargin:
+            case HEADER:
                 return _sheet.getPageSettings().getPrintSetup().getHeaderMargin();
             default:
-                return _sheet.getPageSettings().getMargin(margin);
+                return _sheet.getPageSettings().getMargin(margin.getLegacyApiValue());
         }
     }
 
     /**
      * Sets the size of the margin in inches.
      *
-     * @param margin which margin to get
-     * @param size   the size of the margin
+     * @param margin which margin to set
+     * @param size the size of the margin
+     * @see Sheet#LeftMargin
+     * @see Sheet#RightMargin
+     * @see Sheet#TopMargin
+     * @see Sheet#BottomMargin
+     * @see Sheet#HeaderMargin
+     * @see Sheet#FooterMargin
+     * @deprecated use {@link #setMargin(PageMargin, double)} instead
      */
     @Override
+    @Deprecated
+    @Removal(version = "7.0.0")
     public void setMargin(short margin, double size) {
+        final PageMargin pageMargin = PageMargin.getByShortValue(margin);
+        if (pageMargin == null) {
+            throw new IllegalArgumentException( "Unknown margin constant:  " + margin );
+        }
+        setMargin(pageMargin, size);
+    }
+
+    /**
+     * Sets the size of the margin in inches.
+     *
+     * @param margin which margin to set
+     * @param size the size of the margin
+     * @since POI 5.2.3
+     */
+    @Override
+    public void setMargin(PageMargin margin, double size) {
         switch (margin) {
-            case FooterMargin:
+            case FOOTER:
                 _sheet.getPageSettings().getPrintSetup().setFooterMargin(size);
                 break;
-            case HeaderMargin:
+            case HEADER:
                 _sheet.getPageSettings().getPrintSetup().setHeaderMargin(size);
                 break;
             default:
-                _sheet.getPageSettings().setMargin(margin, size);
+                _sheet.getPageSettings().setMargin(margin.getLegacyApiValue(), size);
         }
     }
 
@@ -1796,7 +1839,7 @@ public final class HSSFSheet implements Sheet {
      *
      * If both colSplit and rowSplit are zero then the existing freeze pane is removed
      *
-     * @param colSplit       Horizonatal position of split.
+     * @param colSplit       Horizontal position of split.
      * @param rowSplit       Vertical position of split.
      * @param leftmostColumn Left column visible in right pane.
      * @param topRow         Top row visible in bottom pane
@@ -1817,7 +1860,7 @@ public final class HSSFSheet implements Sheet {
      *
      * If both colSplit and rowSplit are zero then the existing freeze pane is removed
      *
-     * @param colSplit Horizonatal position of split.
+     * @param colSplit Horizontal position of split.
      * @param rowSplit Vertical position of split.
      */
     @Override
@@ -1827,21 +1870,54 @@ public final class HSSFSheet implements Sheet {
 
     /**
      * Creates a split pane. Any existing freezepane or split pane is overwritten.
-     *
-     * @param xSplitPos      Horizonatal position of split (in 1/20th of a point).
+     * @param xSplitPos      Horizontal position of split (in 1/20th of a point).
      * @param ySplitPos      Vertical position of split (in 1/20th of a point).
-     * @param topRow         Top row visible in bottom pane
-     * @param leftmostColumn Left column visible in right pane.
-     * @param activePane     Active pane.  One of: PANE_LOWER_RIGHT,
-     *                       PANE_UPPER_RIGHT, PANE_LOWER_LEFT, PANE_UPPER_LEFT
+     * @param topRow        Top row visible in bottom pane
+     * @param leftmostColumn   Left column visible in right pane.
+     * @param activePane    Active pane.  One of: PANE_LOWER_RIGHT,
+     *                      PANE_UPPER_RIGHT, PANE_LOWER_LEFT, PANE_UPPER_LEFT
      * @see #PANE_LOWER_LEFT
      * @see #PANE_LOWER_RIGHT
      * @see #PANE_UPPER_LEFT
      * @see #PANE_UPPER_RIGHT
+     * @deprecated use {@link #createSplitPane(int, int, int, int, PaneType)}
      */
     @Override
+    @Deprecated
+    @Removal(version = "7.0.0")
     public void createSplitPane(int xSplitPos, int ySplitPos, int leftmostColumn, int topRow, int activePane) {
         getSheet().createSplitPane(xSplitPos, ySplitPos, topRow, leftmostColumn, activePane);
+    }
+
+    /**
+     * Creates a split pane. Any existing freezepane or split pane is overwritten.
+     * @param xSplitPos      Horizontal position of split (in 1/20th of a point).
+     * @param ySplitPos      Vertical position of split (in 1/20th of a point).
+     * @param topRow        Top row visible in bottom pane
+     * @param leftmostColumn   Left column visible in right pane.
+     * @param activePane    Active pane.
+     * @see PaneType
+     * @since POI 5.2.3
+     */
+    @Override
+    public void createSplitPane(int xSplitPos, int ySplitPos, int leftmostColumn, int topRow, PaneType activePane) {
+        byte activePaneByte;
+        switch (activePane) {
+            case LOWER_RIGHT:
+                activePaneByte = Sheet.PANE_LOWER_RIGHT;
+                break;
+            case UPPER_RIGHT:
+                activePaneByte = Sheet.PANE_UPPER_RIGHT;
+                break;
+            case LOWER_LEFT:
+                activePaneByte = Sheet.PANE_LOWER_LEFT;
+                break;
+            case UPPER_LEFT:
+            default:
+                activePaneByte = Sheet.PANE_UPPER_LEFT;
+                break;
+        }
+        getSheet().createSplitPane(xSplitPos, ySplitPos, topRow, leftmostColumn, activePaneByte);
     }
 
     /**
@@ -2451,10 +2527,7 @@ public final class HSSFSheet implements Sheet {
 
     protected HSSFComment findCellComment(int row, int column) {
         HSSFPatriarch patriarch = getDrawingPatriarch();
-        if (null == patriarch) {
-            patriarch = createDrawingPatriarch();
-        }
-        return lookForComment(patriarch, row, column);
+        return patriarch == null ? null : lookForComment(patriarch, row, column);
     }
 
     private HSSFComment lookForComment(HSSFShapeContainer container, int row, int column) {

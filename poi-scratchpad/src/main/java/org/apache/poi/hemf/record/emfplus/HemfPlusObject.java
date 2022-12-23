@@ -174,7 +174,7 @@ public class HemfPlusObject {
             EmfPlusObjectType objectType = getObjectType();
             assert (objectType != null);
 
-            int size = 0;
+            long size = 0;
 
             totalObjectSize = 0;
             int dataSize2 = (int) dataSize;
@@ -192,7 +192,7 @@ public class HemfPlusObject {
             objectData = objectType.constructor.get();
             size += objectData.init(leis, dataSize2, objectType, flags);
 
-            return size;
+            return Math.toIntExact(size);
         }
 
         @Override
@@ -205,7 +205,7 @@ public class HemfPlusObject {
                 ) {
                     other.linkContinuedObject(objectData);
                 } else {
-                    throw new RuntimeException("can't find previous record for continued record");
+                    throw new IllegalStateException("can't find previous record for continued record");
                 }
             } else {
                 ctx.addPlusObjectTableEntry(this, getObjectId());

@@ -671,7 +671,45 @@ public abstract class BaseTestSheet {
             Cell cell = row.createCell(0);
             CellStyle style2 = cell.getCellStyle();
             assertNotNull(style2);
-            assertEquals(style.getIndex(), style2.getIndex(), "style should match");
+            assertEquals(style.getIndex(), style2.getIndex(), "style2 should match");
+
+            try (Workbook wb2 = _testDataProvider.writeOutAndReadBack(wb)) {
+                Sheet wb2Sheet = wb2.getSheetAt(0);
+                assertNotNull(wb2Sheet.getColumnStyle(0));
+                assertEquals(style.getIndex(), wb2Sheet.getColumnStyle(0).getIndex());
+
+                Row wb2R0 = wb2Sheet.getRow(0);
+                Cell wb2Cell = wb2R0.getCell(0);
+                CellStyle style3 = wb2Cell.getCellStyle();
+                assertNotNull(style3);
+                assertEquals(style.getIndex(), style3.getIndex(), "style3 should match");
+            }
+
+        }
+    }
+
+    @Test
+    protected void defaultRowStyle() throws IOException {
+        try (Workbook wb = _testDataProvider.createWorkbook()) {
+            CellStyle style = wb.createCellStyle();
+            Sheet sheet = wb.createSheet();
+            Row r0 = sheet.createRow(0);
+            r0.setRowStyle(style);
+            assertNotNull(r0.getRowStyle());
+            assertEquals(style.getIndex(), r0.getRowStyle().getIndex());
+
+            Cell cell = r0.createCell(0);
+            CellStyle style2 = cell.getCellStyle();
+            assertNotNull(style2);
+            //current implementations mean that cells inherit column style but not row style
+            assertNotEquals(style.getIndex(), style2.getIndex(), "style should not match");
+
+            try (Workbook wb2 = _testDataProvider.writeOutAndReadBack(wb)) {
+                Sheet wb2Sheet = wb2.getSheetAt(0);
+                Row wb2R0 = wb2Sheet.getRow(0);
+                assertNotNull(wb2R0.getRowStyle());
+                assertEquals(style.getIndex(), wb2R0.getRowStyle().getIndex());
+            }
         }
     }
 
@@ -766,7 +804,7 @@ public abstract class BaseTestSheet {
     }
 
     @Test
-    void testGetSetMargin() throws IOException {
+    void testGetSetMarginDeprecated() throws IOException {
         double[] defaultMargins = (getClass().getName().contains("xssf"))
             ? new double[]{0.7, 0.7, 0.75, 0.75, 0.3, 0.3}
             : new double[]{0.75, 0.75, 1.0, 1.0, 0.3, 0.3};
@@ -805,6 +843,42 @@ public abstract class BaseTestSheet {
                 () -> sheet.setMargin((short) 65, 15)
             );
             assertEquals("Unknown margin constant:  65", ex.getMessage());
+        }
+    }
+
+    @Test
+    void testGetSetMargin() throws IOException {
+        double[] defaultMargins = (getClass().getName().contains("xssf"))
+                ? new double[]{0.7, 0.7, 0.75, 0.75, 0.3, 0.3}
+                : new double[]{0.75, 0.75, 1.0, 1.0, 0.3, 0.3};
+
+        double marginLeft = defaultMargins[0];
+        double marginRight = defaultMargins[1];
+        double marginTop = defaultMargins[2];
+        double marginBottom = defaultMargins[3];
+        //double marginHeader = defaultMargins[4];
+        //double marginFooter = defaultMargins[5];
+
+        try (Workbook workbook = _testDataProvider.createWorkbook()) {
+            Sheet sheet = workbook.createSheet("Sheet 1");
+            assertEquals(marginLeft, sheet.getMargin(PageMargin.LEFT), 0.0);
+            sheet.setMargin(PageMargin.LEFT, 10.0);
+            //left margin is custom, all others are default
+            assertEquals(10.0, sheet.getMargin(PageMargin.LEFT), 0.0);
+            assertEquals(marginRight, sheet.getMargin(PageMargin.RIGHT), 0.0);
+            assertEquals(marginTop, sheet.getMargin(PageMargin.TOP), 0.0);
+            assertEquals(marginBottom, sheet.getMargin(PageMargin.BOTTOM), 0.0);
+            sheet.setMargin(PageMargin.RIGHT, 11.0);
+            assertEquals(11.0, sheet.getMargin(PageMargin.RIGHT), 0.0);
+            sheet.setMargin(PageMargin.TOP, 12.0);
+            assertEquals(12.0, sheet.getMargin(PageMargin.TOP), 0.0);
+            sheet.setMargin(PageMargin.BOTTOM, 13.0);
+            assertEquals(13.0, sheet.getMargin(PageMargin.BOTTOM), 0.0);
+
+            sheet.setMargin(PageMargin.FOOTER, 5.6);
+            assertEquals(5.6, sheet.getMargin(PageMargin.FOOTER), 0.0);
+            sheet.setMargin(PageMargin.HEADER, 11.5);
+            assertEquals(11.5, sheet.getMargin(PageMargin.HEADER), 0.0);
         }
     }
 

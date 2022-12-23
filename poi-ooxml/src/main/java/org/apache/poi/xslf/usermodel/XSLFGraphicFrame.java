@@ -20,6 +20,7 @@
 package org.apache.poi.xslf.usermodel;
 
 import static org.apache.poi.openxml4j.opc.PackageRelationshipTypes.CORE_PROPERTIES_ECMA376_NS;
+import static org.apache.poi.xssf.usermodel.XSSFRelation.NS_PRESENTATIONML;
 
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
@@ -53,7 +54,6 @@ import org.openxmlformats.schemas.presentationml.x2006.main.CTGroupShape;
 @Beta
 public class XSLFGraphicFrame extends XSLFShape implements GraphicalFrame<XSLFShape, XSLFTextParagraph> {
     private static final String DRAWINGML_CHART_URI = "http://schemas.openxmlformats.org/drawingml/2006/chart";
-    private static final String DRAWINGML_DIAGRAM_URI = "http://schemas.openxmlformats.org/drawingml/2006/diagram";
     private static final Logger LOG = LogManager.getLogger(XSLFGraphicFrame.class);
 
     /*package*/ XSLFGraphicFrame(CTGraphicalObjectFrame shape, XSLFSheet sheet){
@@ -100,6 +100,8 @@ public class XSLFGraphicFrame extends XSLFShape implements GraphicalFrame<XSLFSh
             return new XSLFTable(shape, sheet);
         case XSLFObjectShape.OLE_URI:
             return new XSLFObjectShape(shape, sheet);
+        case XSLFDiagram.DRAWINGML_DIAGRAM_URI:
+            return new XSLFDiagram(shape, sheet);
         default:
             return new XSLFGraphicFrame(shape, sheet);
         }
@@ -177,7 +179,7 @@ public class XSLFGraphicFrame extends XSLFShape implements GraphicalFrame<XSLFSh
      */
     public boolean hasDiagram() {
         String uri = getGraphicalData().getUri();
-        return uri.equals(DRAWINGML_DIAGRAM_URI);
+        return uri.equals(XSLFDiagram.DRAWINGML_DIAGRAM_URI);
     }
 
     private CTGraphicalObjectData getGraphicalData() {
@@ -190,12 +192,9 @@ public class XSLFGraphicFrame extends XSLFShape implements GraphicalFrame<XSLFSh
             String xpath = "declare namespace c='" + DRAWINGML_CHART_URI + "' c:chart";
             XmlObject[] obj = getGraphicalData().selectPath(xpath);
             if (obj != null && obj.length == 1) {
-                XmlCursor c = obj[0].newCursor();
-                try {
+                try (XmlCursor c = obj[0].newCursor()) {
                     QName idQualifiedName = new QName(CORE_PROPERTIES_ECMA376_NS, "id");
                     id = c.getAttributeText(idQualifiedName);
-                } finally {
-                    c.dispose();
                 }
             }
             if (id == null) {
@@ -214,7 +213,7 @@ public class XSLFGraphicFrame extends XSLFShape implements GraphicalFrame<XSLFSh
 
         CTGraphicalObjectData data = getGraphicalData();
         String uri = data.getUri();
-        if(uri.equals(DRAWINGML_DIAGRAM_URI)){
+        if(uri.equals(XSLFDiagram.DRAWINGML_DIAGRAM_URI)){
             copyDiagram(data, (XSLFGraphicFrame)sh);
         } if(uri.equals(DRAWINGML_CHART_URI)){
             copyChart(data, (XSLFGraphicFrame)sh);
@@ -230,8 +229,7 @@ public class XSLFGraphicFrame extends XSLFShape implements GraphicalFrame<XSLFSh
         String xpath = "declare namespace c='" + DRAWINGML_CHART_URI + "' c:chart";
         XmlObject[] obj = objData.selectPath(xpath);
         if (obj != null && obj.length == 1) {
-            XmlCursor c = obj[0].newCursor();
-            try {
+            try (XmlCursor c = obj[0].newCursor()) {
                 // duplicate chart with embedded workbook
                 QName idQualifiedName = new QName(CORE_PROPERTIES_ECMA376_NS, "id");
                 String id = c.getAttributeText(idQualifiedName);
@@ -254,21 +252,17 @@ public class XSLFGraphicFrame extends XSLFShape implements GraphicalFrame<XSLFSh
                 }
             } catch (InvalidFormatException | IOException e) {
                 throw new POIXMLException(e);
-            } finally {
-                c.dispose();
             }
         }
     }
 
     // TODO should be moved to a sub-class
     private void copyDiagram(CTGraphicalObjectData objData, XSLFGraphicFrame srcShape){
-        String xpath = "declare namespace dgm='" + DRAWINGML_DIAGRAM_URI + "' $this//dgm:relIds";
+        String xpath = "declare namespace dgm='" + XSLFDiagram.DRAWINGML_DIAGRAM_URI + "' $this//dgm:relIds";
         XmlObject[] obj = objData.selectPath(xpath);
         if(obj != null && obj.length == 1) {
-            XmlCursor c = obj[0].newCursor();
-
             XSLFSheet sheet = srcShape.getSheet();
-            try {
+            try (XmlCursor c = obj[0].newCursor()) {
                 String dm = c.getAttributeText(new QName(CORE_PROPERTIES_ECMA376_NS, "dm"));
                 PackageRelationship dmRel = sheet.getPackagePart().getRelationship(dm);
                 PackagePart dmPart = sheet.getPackagePart().getRelatedPart(dmRel);
@@ -291,8 +285,6 @@ public class XSLFGraphicFrame extends XSLFShape implements GraphicalFrame<XSLFSh
 
             } catch (InvalidFormatException e){
                 throw new POIXMLException(e);
-            } finally {
-                c.dispose();
             }
         }
     }
@@ -300,7 +292,7 @@ public class XSLFGraphicFrame extends XSLFShape implements GraphicalFrame<XSLFSh
     @Override
     public XSLFPictureShape getFallbackPicture() {
         String xquery =
-                  "declare namespace p='http://schemas.openxmlformats.org/presentationml/2006/main'; "
+                  "declare namespace p='" + NS_PRESENTATIONML + "'; "
                 + "declare namespace mc='http://schemas.openxmlformats.org/markup-compatibility/2006' "
                 + ".//mc:Fallback/*/p:pic"
                 ;

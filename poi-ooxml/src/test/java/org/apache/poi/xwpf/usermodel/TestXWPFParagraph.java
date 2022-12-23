@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.List;
 
+import org.apache.poi.util.StringUtil;
 import org.apache.poi.xwpf.XWPFTestDataSamples;
 import org.junit.jupiter.api.Test;
 import org.openxmlformats.schemas.drawingml.x2006.picture.CTPicture;
@@ -779,7 +780,7 @@ public final class TestXWPFParagraph {
                 str.append(par.getText()).append("\n");
             }
             String s = str.toString();
-            assertTrue(s.trim().length() > 0, "Having text: \n" + s + "\nTrimmed length: " + s.trim().length());
+            assertTrue(StringUtil.isNotBlank(s), "Having text: \n" + s + "\nTrimmed length: " + s.trim().length());
         }
     }
 

@@ -169,7 +169,7 @@ public class XAdESSignatureFacet implements SignatureFacet {
         SignatureConfig signatureConfig = signatureInfo.getSignatureConfig();
         List<X509Certificate> chain = signatureConfig.getSigningCertificateChain();
         if (chain == null || chain.isEmpty()) {
-            throw new RuntimeException("no signing certificate chain available");
+            throw new IllegalStateException("no signing certificate chain available");
         }
         CertIDListType signingCertificates = signedSignatureProperties.addNewSigningCertificate();
         CertIDType certId = signingCertificates.addNewCert();
@@ -332,7 +332,7 @@ public class XAdESSignatureFacet implements SignatureFacet {
         try {
             encodedCertificate = certificate.getEncoded();
         } catch (CertificateEncodingException e) {
-            throw new RuntimeException("certificate encoding error: "
+            throw new IllegalStateException("certificate encoding error: "
                     + e.getMessage(), e);
         }
         DigestAlgAndValueType certDigest = certId.addNewCertDigest();
@@ -351,21 +351,20 @@ public class XAdESSignatureFacet implements SignatureFacet {
     }
 
     protected static void insertXChild(XmlObject root, XmlObject child) {
-        XmlCursor rootCursor = root.newCursor();
-        rootCursor.toEndToken();
-        XmlCursor childCursor = child.newCursor();
-        childCursor.toNextToken();
-        childCursor.moveXml(rootCursor);
-        childCursor.dispose();
-        rootCursor.dispose();
+        try (XmlCursor rootCursor = root.newCursor()) {
+            rootCursor.toEndToken();
+            try (XmlCursor childCursor = child.newCursor()) {
+                childCursor.toNextToken();
+                childCursor.moveXml(rootCursor);
+            }
+        }
     }
 
     /**
      * Workaround for Document.importNode, which causes SIGSEGV in JDK14 (Ubuntu)
      */
     private static Element importNode(Document document, XmlObject xo) {
-        XmlCursor cur = xo.newCursor();
-        try {
+        try (XmlCursor cur = xo.newCursor()) {
             QName elName = cur.getName();
             Element lastNode = document.createElementNS(elName.getNamespaceURI(), elName.getLocalPart());
             while (cur.hasNextToken()) {
@@ -415,8 +414,6 @@ public class XAdESSignatureFacet implements SignatureFacet {
                 }
             }
             return lastNode;
-        } finally {
-            cur.dispose();
         }
     }
 }

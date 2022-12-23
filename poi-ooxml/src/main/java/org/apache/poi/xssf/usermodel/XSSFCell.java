@@ -297,45 +297,51 @@ public final class XSSFCell extends CellBase {
                 rt = new XSSFRichTextString("");
                 break;
             case STRING:
-                STCellType.Enum xmlbeanCellType = _cell.getT();
-                if (xmlbeanCellType == STCellType.INLINE_STR) {
-                    if(_cell.isSetIs()) {
-                        //string is expressed directly in the cell definition instead of implementing the shared string table.
-                        rt = new XSSFRichTextString(_cell.getIs());
-                    } else if (_cell.isSetV()) {
-                        //cached result of a formula
-                        rt = new XSSFRichTextString(_cell.getV());
-                    } else {
-                        rt = new XSSFRichTextString("");
-                    }
-                } else if (xmlbeanCellType == STCellType.STR) {
-                    //cached formula value
-                    rt = new XSSFRichTextString(_cell.isSetV() ? _cell.getV() : "");
-                } else {
-                    if (_cell.isSetV()) {
-                        try {
-                            int idx = Integer.parseInt(_cell.getV());
-                            rt = (XSSFRichTextString)_sharedStringSource.getItemAt(idx);
-                        } catch(Throwable t) {
-                            rt = new XSSFRichTextString("");
-                        }
-                    } else {
-                        rt = new XSSFRichTextString("");
-                    }
-                }
+                rt = findStringValue();
                 break;
             case FORMULA: {
                 CellType cachedValueType = getBaseCellType(false);
                 if (cachedValueType != CellType.STRING) {
                     throw typeMismatch(CellType.STRING, cachedValueType, true);
                 }
-                rt = new XSSFRichTextString(_cell.isSetV() ? _cell.getV() : "");
+                rt = findStringValue();
                 break;
             }
             default:
                 throw typeMismatch(CellType.STRING, cellType, false);
         }
         rt.setStylesTableReference(_stylesSource);
+        return rt;
+    }
+
+    private XSSFRichTextString findStringValue() {
+        XSSFRichTextString rt;
+        STCellType.Enum xmlbeanCellType = _cell.getT();
+        if (xmlbeanCellType == STCellType.INLINE_STR) {
+            if(_cell.isSetIs()) {
+                //string is expressed directly in the cell definition instead of implementing the shared string table.
+                rt = new XSSFRichTextString(_cell.getIs());
+            } else if (_cell.isSetV()) {
+                //cached result of a formula
+                rt = new XSSFRichTextString(_cell.getV());
+            } else {
+                rt = new XSSFRichTextString("");
+            }
+        } else if (xmlbeanCellType == STCellType.STR) {
+            //cached formula value
+            rt = new XSSFRichTextString(_cell.isSetV() ? _cell.getV() : "");
+        } else {
+            if (_cell.isSetV()) {
+                try {
+                    int idx = Integer.parseInt(_cell.getV());
+                    rt = (XSSFRichTextString)_sharedStringSource.getItemAt(idx);
+                } catch(Throwable t) {
+                    rt = new XSSFRichTextString("");
+                }
+            } else {
+                rt = new XSSFRichTextString("");
+            }
+        }
         return rt;
     }
 
@@ -354,9 +360,15 @@ public final class XSSFCell extends CellBase {
             if(_cell.getT() == STCellType.INLINE_STR) {
                 //set the 'pre-evaluated result
                 _cell.setV(str.getString());
-            } else {
+            } else if (str instanceof XSSFRichTextString) {
                 _cell.setT(STCellType.S);
                 XSSFRichTextString rt = (XSSFRichTextString)str;
+                rt.setStylesTableReference(_stylesSource);
+                int sRef = _sharedStringSource.addSharedStringItem(rt);
+                _cell.setV(Integer.toString(sRef));
+            } else {
+                _cell.setT(STCellType.S);
+                XSSFRichTextString rt = new XSSFRichTextString(str.getString());
                 rt.setStylesTableReference(_stylesSource);
                 int sRef = _sharedStringSource.addSharedStringItem(rt);
                 _cell.setV(Integer.toString(sRef));
@@ -549,18 +561,53 @@ public final class XSSFCell extends CellBase {
     }
 
     /**
-     * Return the cell's style.
+     * Return the cell's style. Since POI v5.2.3, this returns the column style if the
+     * cell has no style of its own. If no column default style is set, the row default style is checked.
+     * This method has always fallen back to return the default style
+     * if there is no other style to return.
      *
      * @return the cell's style.
      */
     @Override
     public XSSFCellStyle getCellStyle() {
-        XSSFCellStyle style = null;
-        if(_stylesSource.getNumCellStyles() > 0){
-            long idx = _cell.isSetS() ? _cell.getS() : 0;
-            style = _stylesSource.getStyleAt(Math.toIntExact(idx));
+        XSSFCellStyle style = getExplicitCellStyle();
+        if (style == null) {
+            style = getDefaultCellStyleFromColumn();
         }
         return style;
+    }
+
+    private XSSFCellStyle getExplicitCellStyle() {
+        XSSFCellStyle style = null;
+        if(_stylesSource.getNumCellStyles() > 0) {
+            if (_cell.isSetS()) {
+                long idx = _cell.getS();
+                style = _stylesSource.getStyleAt(Math.toIntExact(idx));
+            }
+        }
+        return style;
+    }
+
+    private XSSFCellStyle getDefaultCellStyleFromColumn() {
+        XSSFCellStyle style = null;
+        XSSFSheet sheet = getSheet();
+        if (sheet != null) {
+            style = (XSSFCellStyle) sheet.getColumnStyle(getColumnIndex());
+        }
+        return style;
+    }
+
+    protected void applyDefaultCellStyleIfNecessary() {
+        XSSFCellStyle style = getExplicitCellStyle();
+        if (style == null) {
+            XSSFSheet sheet = getSheet();
+            if (sheet != null) {
+                XSSFCellStyle defaultStyle = getDefaultCellStyleFromColumn();
+                if (defaultStyle != null) {
+                    setCellStyle(defaultStyle);
+                }
+            }
+        }
     }
 
     /**
@@ -947,7 +994,7 @@ public final class XSSFCell extends CellBase {
     }
 
     /**
-     * @throws RuntimeException if the bounds are exceeded.
+     * @throws IllegalStateException if the bounds are exceeded.
      */
     private static void checkBounds(int cellIndex) {
         SpreadsheetVersion v = SpreadsheetVersion.EXCEL2007;

@@ -27,7 +27,6 @@ import javax.xml.namespace.QName;
 
 import org.apache.poi.poifs.crypt.CryptoFunctions;
 import org.apache.poi.poifs.crypt.HashAlgorithm;
-import org.apache.poi.poifs.crypt.temp.EncryptedTempData;
 import org.apache.poi.util.Internal;
 import org.apache.poi.util.RandomSingleton;
 import org.apache.poi.util.StringUtil;
@@ -49,8 +48,7 @@ public final class XSSFPasswordHelper {
      * @param prefix the prefix of the password attributes, may be null
      */
     public static void setPassword(XmlObject xobj, String password, HashAlgorithm hashAlgo, String prefix) {
-        XmlCursor cur = xobj.newCursor();
-        try {
+        try (final XmlCursor cur = xobj.newCursor()) {
             if (password == null) {
                 cur.removeAttribute(getAttrName(prefix, "password"));
                 cur.removeAttribute(getAttrName(prefix, "algorithmName"));
@@ -84,8 +82,6 @@ public final class XSSFPasswordHelper {
                 cur.insertAttributeWithValue(getAttrName(prefix, "saltValue"), enc64.encodeToString(salt));
                 cur.insertAttributeWithValue(getAttrName(prefix, "spinCount"), ""+spinCount);
             }
-        } finally {
-            cur.dispose();
         }
     }
 
@@ -103,9 +99,8 @@ public final class XSSFPasswordHelper {
     public static boolean validatePassword(XmlObject xobj, String password, String prefix) {
         // TODO: is "velvetSweatshop" the default password?
         if (password == null) return false;
-        
-        XmlCursor cur = xobj.newCursor();
-        try {
+
+        try (final XmlCursor cur = xobj.newCursor()) {
             String xorHashVal = cur.getAttributeText(getAttrName(prefix, "password"));
             String algoName = cur.getAttributeText(getAttrName(prefix, "algorithmName"));
             String hashVal = cur.getAttributeText(getAttrName(prefix, "hashValue"));
@@ -129,8 +124,6 @@ public final class XSSFPasswordHelper {
                 byte[] hash2 = CryptoFunctions.hashPassword(password, hashAlgo, salt, spinCnt, false);
                 return Arrays.equals(hash1, hash2);
             }
-        } finally {
-            cur.dispose();
         }
     }
     

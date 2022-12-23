@@ -33,7 +33,6 @@ import org.apache.poi.ss.usermodel.CellCopyContext;
 import org.apache.poi.ss.usermodel.CellCopyPolicy;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellType;
-import org.apache.poi.ss.usermodel.FormulaError;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.helpers.RowShifter;
 import org.apache.poi.ss.util.CellRangeAddress;
@@ -172,10 +171,10 @@ public final class HSSFRow implements Row, Comparable<HSSFRow> {
 
         int column=cell.getColumnIndex();
         if(column < 0) {
-            throw new RuntimeException("Negative cell indexes not allowed");
+            throw new IllegalStateException("Negative cell indexes not allowed");
         }
         if(column >= cells.length || cell != cells[column]) {
-            throw new RuntimeException("Specified cell is not from this row");
+            throw new IllegalStateException("Specified cell is not from this row");
         }
         if(cell.isPartOfArrayFormulaGroup()){
             cell.tryToDeleteArrayFormula(null);

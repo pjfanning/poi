@@ -27,6 +27,7 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Collections;
@@ -355,7 +356,7 @@ public class HemfPlusBrush {
                 size += LittleEndianConsts.INT_SIZE;
             }
 
-            brushBytes = IOUtils.toByteArray(leis, (int)(dataSize-size), MAX_OBJECT_SIZE);
+            brushBytes = IOUtils.toByteArray(leis, Math.toIntExact(dataSize-size), MAX_OBJECT_SIZE);
 
             return dataSize;
         }
@@ -387,17 +388,27 @@ public class HemfPlusBrush {
             return brushBytes;
         }
 
+        /**
+         * @param continuedObjectData list of object data
+         * @return {@link EmfPlusBrushData}
+         * @throws IllegalStateException if the data cannot be processed
+         */
         public EmfPlusBrushData getBrushData(List<? extends EmfPlusObjectData> continuedObjectData) {
             EmfPlusBrushData brushData = brushType.constructor.get();
             byte[] buf = getRawData(continuedObjectData);
-            try {
-                brushData.init(new LittleEndianInputStream(new UnsynchronizedByteArrayInputStream(buf)), buf.length);
+            try (UnsynchronizedByteArrayInputStream bis = new UnsynchronizedByteArrayInputStream(buf)){
+                brushData.init(new LittleEndianInputStream(bis), buf.length);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new IllegalStateException(e);
             }
             return brushData;
         }
 
+        /**
+         * @param continuedObjectData list of object data
+         * @return byte array
+         * @throws IllegalStateException if the data cannot be processed
+         */
         public byte[] getRawData(List<? extends EmfPlusObjectData> continuedObjectData) {
             try (UnsynchronizedByteArrayOutputStream bos = new UnsynchronizedByteArrayOutputStream()) {
                 bos.write(getBrushBytes());
@@ -408,7 +419,7 @@ public class HemfPlusBrush {
                 }
                 return bos.toByteArray();
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new IllegalStateException(e);
             }
         }
 
@@ -542,7 +553,7 @@ public class HemfPlusBrush {
             // gradient is repeated.
             wrapMode = EmfPlusWrapMode.valueOf(leis.readInt());
 
-            int size = 2 * LittleEndianConsts.INT_SIZE;
+            long size = 2L * LittleEndianConsts.INT_SIZE;
             size += readRectF(leis, rect);
 
             // An EmfPlusARGB object that specifies the color at the starting/ending boundary point of the linear gradient brush.
@@ -552,14 +563,15 @@ public class HemfPlusBrush {
             // skip reserved1/2 fields
             leis.skipFully(2 * LittleEndianConsts.INT_SIZE);
 
-            size += 4 * LittleEndianConsts.INT_SIZE;
+            size += 4L * LittleEndianConsts.INT_SIZE;
 
             if (TRANSFORM.isSet(dataFlags)) {
-                size += readXForm(leis, (blendTransform = new AffineTransform()));
+                blendTransform = new AffineTransform();
+                size += readXForm(leis, blendTransform);
             }
 
             if (isPreset() && (isBlendH() || isBlendV())) {
-                throw new RuntimeException("invalid combination of preset colors and blend factors v/h");
+                throw new IOException("invalid combination of preset colors and blend factors v/h");
             }
 
             size += (isPreset()) ? readColors(leis, d -> positions = d, c -> blendColors = c) : 0;
@@ -709,7 +721,7 @@ public class HemfPlusBrush {
             // that appears at the center point of the brush. The color of the brush changes gradually from the
             // boundary color to the center color as it moves from the boundary to the center point.
             centerColor = readARGB(leis.readInt());
-            int size = 3*LittleEndianConsts.INT_SIZE;
+            long size = 3L * LittleEndianConsts.INT_SIZE;
 
             if (wrapMode == null) {
                 return size;
@@ -727,7 +739,7 @@ public class HemfPlusBrush {
             for (int i = 0; i < colorCount; i++) {
                 surroundingColor[i] = readARGB(leis.readInt());
             }
-            size += (colorCount + 1) * LittleEndianConsts.INT_SIZE;
+            size += (colorCount + 1L) * LittleEndianConsts.INT_SIZE;
 
             // The boundary of the path gradient brush, which is specified by either a path or a closed cardinal spline.
             // If the BrushDataPath flag is set in the BrushDataFlags field, this field MUST contain an
@@ -763,7 +775,7 @@ public class HemfPlusBrush {
             final boolean isPreset = PRESET_COLORS.isSet(dataFlags);
             final boolean blendH = BLEND_FACTORS_H.isSet(dataFlags);
             if (isPreset && blendH) {
-                throw new RuntimeException("invalid combination of preset colors and blend factors h");
+                throw new IOException("invalid combination of preset colors and blend factors h");
             }
 
             size += (isPreset) ? readColors(leis, d -> positions = d, c -> blendColors = c) : 0;
@@ -776,7 +788,7 @@ public class HemfPlusBrush {
                 // A 32-bit unsigned integer that specifies the number of focus scales. This value MUST be 2.
                 int focusScaleCount = leis.readInt();
                 if (focusScaleCount != 2) {
-                    throw new RuntimeException("invalid focus scale count");
+                    throw new IOException("invalid focus scale count");
                 }
                 // A floating-point value that defines the horizontal/vertical focus scale.
                 // The focus scale MUST be a value between 0.0 and 1.0, exclusive.
@@ -846,17 +858,19 @@ public class HemfPlusBrush {
             // across a shape, when the image is smaller than the area being filled.
             wrapMode = EmfPlusWrapMode.valueOf(leis.readInt());
 
-            int size = 2*LittleEndianConsts.INT_SIZE;
+            long size = 2L * LittleEndianConsts.INT_SIZE;
 
             if (TRANSFORM.isSet(dataFlags)) {
-                size += readXForm(leis, (brushTransform = new AffineTransform()));
+                brushTransform = new AffineTransform();
+                size += readXForm(leis, brushTransform);
             }
 
             if (dataSize > size) {
-                size += (image = new EmfPlusImage()).init(leis, dataSize-size, EmfPlusObjectType.IMAGE, 0);
+                image = new EmfPlusImage();
+                size += image.init(leis, dataSize-size, EmfPlusObjectType.IMAGE, 0);
             }
 
-            return size;
+            return Math.toIntExact(size);
         }
 
         @Override

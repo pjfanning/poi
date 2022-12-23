@@ -658,7 +658,7 @@ public class VBAMacroReader implements Closeable {
             } catch (EOFException e) {
                 return;
             }
-            if (mbcs.trim().length() > 0 && unicode.trim().length() > 0) {
+            if (StringUtil.isNotBlank(mbcs) && StringUtil.isNotBlank(unicode)) {
                 moduleNames.put(mbcs, unicode);
             }
 
@@ -785,7 +785,7 @@ public class VBAMacroReader implements Closeable {
 
     /**
      * Sometimes the offset record in the dirstream is incorrect, but the macro can still be found.
-     * This will try to find the the first RLEDecompressing stream that starts with "Attribute".
+     * This will try to find the first RLEDecompressing stream that starts with "Attribute".
      * This relies on some, er, heuristics, admittedly.
      *
      * @param is full module inputstream to read

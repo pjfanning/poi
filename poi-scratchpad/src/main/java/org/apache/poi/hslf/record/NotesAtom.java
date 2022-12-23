@@ -35,7 +35,7 @@ import org.apache.poi.util.LittleEndian;
 public final class NotesAtom extends RecordAtom {
 
     private byte[] _header;
-    private static long _type = 1009l;
+    private static long _type = 1009L;
 
     private int slideID;
     private boolean followMasterObjects;
@@ -98,9 +98,9 @@ public final class NotesAtom extends RecordAtom {
 
         // Flags
         short flags = 0;
-        if(followMasterObjects)    { flags += 1; }
-        if(followMasterScheme)     { flags += 2; }
-        if(followMasterBackground) { flags += 4; }
+        if(followMasterObjects)    { flags += (short) 1; }
+        if(followMasterScheme)     { flags += (short) 2; }
+        if(followMasterBackground) { flags += (short) 4; }
         writeLittleEndian(flags,out);
 
         // Reserved fields

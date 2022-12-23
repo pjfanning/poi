@@ -107,6 +107,7 @@ import org.openxmlformats.schemas.spreadsheetml.x2006.main.*;
  */
 public class XSSFWorkbook extends POIXMLDocument implements Workbook, Date1904Support {
     private static final Pattern COMMA_PATTERN = Pattern.compile(",");
+    private static final Pattern GET_ALL_PICTURES_PATTERN = Pattern.compile("/xl/media/.*?");
 
     /**
      * Images formats supported by XSSF but not by HSSF
@@ -246,7 +247,7 @@ public class XSSFWorkbook extends POIXMLDocument implements Workbook, Date1904Su
      * @param pkg the OpenXML4J {@code OPC Package} object.
      * @throws IOException If reading data from the package fails
      * @throws POIXMLException a RuntimeException that can be caused by invalid OOXML data
-     * @throws RuntimeException a number of other runtime exceptions can be thrown, especially if there are problems with the
+     * @throws IllegalStateException a number of other runtime exceptions can be thrown, especially if there are problems with the
      * input format
      */
     public XSSFWorkbook(OPCPackage pkg) throws IOException {
@@ -278,7 +279,7 @@ public class XSSFWorkbook extends POIXMLDocument implements Workbook, Date1904Su
      *
      * @throws IOException If reading data from the stream fails
      * @throws POIXMLException a RuntimeException that can be caused by invalid OOXML data
-     * @throws RuntimeException a number of other runtime exceptions can be thrown, especially if there are problems with the
+     * @throws IllegalStateException a number of other runtime exceptions can be thrown, especially if there are problems with the
      * input format
      */
     public XSSFWorkbook(InputStream is) throws IOException {
@@ -303,7 +304,7 @@ public class XSSFWorkbook extends POIXMLDocument implements Workbook, Date1904Su
      * @throws IOException If reading data from the file fails
      * @throws InvalidFormatException If the file has a format that cannot be read or if the file is corrupted
      * @throws POIXMLException a RuntimeException that can be caused by invalid OOXML data
-     * @throws RuntimeException a number of other runtime exceptions can be thrown, especially if there are problems with the
+     * @throws IllegalStateException a number of other runtime exceptions can be thrown, especially if there are problems with the
      * input format
      */
     public XSSFWorkbook(File file) throws IOException, InvalidFormatException {
@@ -324,7 +325,7 @@ public class XSSFWorkbook extends POIXMLDocument implements Workbook, Date1904Su
      * @param path   the file name.
      * @throws IOException If reading data from the file fails
      * @throws POIXMLException a RuntimeException that can be caused by invalid OOXML data
-     * @throws RuntimeException a number of other runtime exceptions can be thrown, especially if there are problems with the
+     * @throws IllegalStateException a number of other runtime exceptions can be thrown, especially if there are problems with the
      * input format
      *
      */
@@ -337,7 +338,7 @@ public class XSSFWorkbook extends POIXMLDocument implements Workbook, Date1904Su
      * @param part  package part
      * @throws IOException If reading data from the Package Part fails
      * @throws POIXMLException a RuntimeException that can be caused by invalid OOXML data
-     * @throws RuntimeException a number of other runtime exceptions can be thrown, especially if there are problems with the
+     * @throws IllegalStateException a number of other runtime exceptions can be thrown, especially if there are problems with the
      * input format
      * @since POI 4.0.0
      */
@@ -454,7 +455,7 @@ public class XSSFWorkbook extends POIXMLDocument implements Workbook, Date1904Su
      * the DOM based parse of large sheets (see examples).
      *
      * @throws POIXMLException a RuntimeException that can be caused by invalid OOXML data
-     * @throws RuntimeException a number of other runtime exceptions can be thrown, especially if there are problems with the
+     * @throws IllegalStateException a number of other runtime exceptions can be thrown, especially if there are problems with the
      * input format
      */
     public void parseSheet(Map<String, XSSFSheet> shIdMap, CTSheet ctSheet) {
@@ -713,6 +714,7 @@ public class XSSFWorkbook extends POIXMLDocument implements Workbook, Date1904Su
                 }
             }
         }
+        XSSFSheet.cloneTables(clonedSheet);
         return clonedSheet;
     }
 
@@ -993,7 +995,7 @@ public class XSSFWorkbook extends POIXMLDocument implements Workbook, Date1904Su
     @Override
     public List<XSSFPictureData> getAllPictures() {
         if(pictures == null){
-            List<PackagePart> mediaParts = getPackage().getPartsByName(Pattern.compile("/xl/media/.*?"));
+            List<PackagePart> mediaParts = getPackage().getPartsByName(GET_ALL_PICTURES_PATTERN);
             pictures = new ArrayList<>(mediaParts.size());
             for(PackagePart part : mediaParts){
                 pictures.add(new XSSFPictureData(part));
@@ -1916,13 +1918,13 @@ public class XSSFWorkbook extends POIXMLDocument implements Workbook, Date1904Su
     @Override
     @NotImplemented
     public boolean isHidden() {
-        throw new RuntimeException("Not implemented yet");
+        throw new IllegalStateException("Not implemented yet");
     }
 
     @Override
     @NotImplemented
     public void setHidden(boolean hiddenFlag) {
-        throw new RuntimeException("Not implemented yet");
+        throw new IllegalStateException("Not implemented yet");
     }
 
     @Override

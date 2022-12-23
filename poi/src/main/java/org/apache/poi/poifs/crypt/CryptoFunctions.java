@@ -161,7 +161,7 @@ public final class CryptoFunctions {
      *     {@code blockKey: IV = H(KeySalt + blockKey)}</li>
      * <li>If a blockKey is not provided, let IV be equal to the following value:<br>
      *     {@code KeySalt:IV = KeySalt}</li>
-     * <li>If the number of bytes in the value of IV is less than the the value of the blockSize attribute
+     * <li>If the number of bytes in the value of IV is less than the value of the blockSize attribute
      *     corresponding to the cipherAlgorithm attribute, pad the array of bytes by appending 0x36 until
      *     the array is blockSize bytes. If the array of bytes is larger than blockSize bytes, truncate the
      *     array to blockSize bytes.</li>
@@ -560,7 +560,7 @@ public final class CryptoFunctions {
      * @param password the password
      * @return the ansi bytes
      *
-     * @see <a href="http://www.ecma-international.org/news/TC45_current_work/Office%20Open%20XML%20Part%204%20-%20Markup%20Language%20Reference.pdf">Part 4 - Markup Language Reference - Ecma International - section 3.2.29 (workbookProtection)</a>
+     * @see <a href="https://www.ecma-international.org/news/TC45_current_work/Office%20Open%20XML%20Part%204%20-%20Markup%20Language%20Reference.pdf">Part 4 - Markup Language Reference - Ecma International - section 3.2.29 (workbookProtection)</a>
      */
     private static byte[] toAnsiPassword(String password) {
         // TODO: charset conversion (see ecma spec)

@@ -57,26 +57,23 @@ public final class Counta implements Function {
 
         int temp = 0;
 
-        for(int i=0; i<nArgs; i++) {
-            temp += CountUtils.countArg(args[i], _predicate);
+        for (ValueEval arg : args) {
+            temp += CountUtils.countArg(arg, _predicate);
 
         }
         return new NumberEval(temp);
     }
 
-    private static final I_MatchPredicate defaultPredicate = new I_MatchPredicate() {
+    private static final I_MatchPredicate defaultPredicate = valueEval -> {
+        // Note - observed behavior of Excel:
+        // Error values like #VALUE!, #REF!, #DIV/0!, #NAME? etc don't cause this COUNTA to return an error
+        // in fact, they seem to get counted
 
-        public boolean matches(ValueEval valueEval) {
-            // Note - observed behavior of Excel:
-            // Error values like #VALUE!, #REF!, #DIV/0!, #NAME? etc don't cause this COUNTA to return an error
-            // in fact, they seem to get counted
-
-            if(valueEval == BlankEval.instance) {
-                return false;
-            }
-            // Note - everything but BlankEval counts
-            return true;
+        if(valueEval == BlankEval.instance) {
+            return false;
         }
+        // Note - everything but BlankEval counts
+        return true;
     };
 
     private static final I_MatchPredicate subtotalPredicate = new I_MatchAreaPredicate() {

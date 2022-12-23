@@ -27,6 +27,7 @@ import org.apache.poi.ss.util.AreaReference;
 import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.util.Beta;
 import org.apache.poi.util.Internal;
+import org.apache.poi.util.StringUtil;
 import org.apache.xmlbeans.XmlException;
 import org.apache.xmlbeans.XmlOptions;
 import org.openxmlformats.schemas.spreadsheetml.x2006.main.*;
@@ -86,8 +87,18 @@ public class XSSFPivotTable extends POIXMLDocumentPart {
             //Removing root element
             options.setLoadReplaceDocumentElement(null);
             pivotTableDefinition = CTPivotTableDefinition.Factory.parse(is, options);
+            pivotCacheDefinition = null;
         } catch (XmlException e) {
             throw new IOException(e.getLocalizedMessage());
+        }
+    }
+
+    private void lazyInitXSSFPivotCacheDefinition() {
+        for (POIXMLDocumentPart documentPart : getRelations()) {
+            if (documentPart instanceof XSSFPivotCacheDefinition) {
+                pivotCacheDefinition = (XSSFPivotCacheDefinition) documentPart;
+                break;
+            }
         }
     }
 
@@ -125,6 +136,9 @@ public class XSSFPivotTable extends POIXMLDocumentPart {
 
     @Beta
     public XSSFPivotCacheDefinition getPivotCacheDefinition() {
+        if (pivotCacheDefinition == null) {
+            lazyInitXSSFPivotCacheDefinition();
+        }
         return pivotCacheDefinition;
     }
 
@@ -293,7 +307,7 @@ public class XSSFPivotTable extends POIXMLDocumentPart {
 
         pivotField.setAxis(STAxis.AXIS_COL);
         pivotField.setShowAll(false);
-        if (valueFormat != null && !valueFormat.trim().isEmpty()) {
+        if (StringUtil.isNotBlank(valueFormat)) {
             DataFormat df = parentSheet.getWorkbook().createDataFormat();
             pivotField.setNumFmtId(df.getFormat(valueFormat));
         }
@@ -416,7 +430,7 @@ public class XSSFPivotTable extends POIXMLDocumentPart {
         dataField.setSubtotal(STDataConsolidateFunction.Enum.forInt(function.getValue()));
         dataField.setName(valueFieldName);
         dataField.setFld(columnIndex);
-        if (valueFormat != null && !valueFormat.trim().isEmpty()) {
+        if (StringUtil.isNotBlank(valueFormat)) {
             DataFormat df = parentSheet.getWorkbook().createDataFormat();
             dataField.setNumFmtId(df.getFormat(valueFormat));
         }

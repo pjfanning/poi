@@ -308,7 +308,7 @@ public class StylesTable extends POIXMLDocumentPart implements Styles {
 
     /**
      * Puts {@code fmt} in the numberFormats map if the format is not
-     * already in the the number format style table.
+     * already in the number format style table.
      * Does nothing if {@code fmt} is already in number format style table.
      *
      * @param fmt the number format to add to number format style table
@@ -467,10 +467,12 @@ public class StylesTable extends POIXMLDocumentPart implements Styles {
     public int putStyle(XSSFCellStyle style) {
         CTXf mainXF = style.getCoreXf();
 
-        if(! xfs.contains(mainXF)) {
+        int ret = xfs.indexOf(mainXF);
+        if(ret == -1) {
             xfs.add(mainXF);
+            ret = xfs.size() - 1;
         }
-        return xfs.indexOf(mainXF);
+        return ret;
     }
 
     @Override

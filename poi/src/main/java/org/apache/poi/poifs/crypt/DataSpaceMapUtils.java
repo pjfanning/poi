@@ -24,8 +24,6 @@ import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.poifs.crypt.standard.EncryptionRecord;
 import org.apache.poi.poifs.filesystem.DirectoryEntry;
 import org.apache.poi.poifs.filesystem.DocumentEntry;
-import org.apache.poi.poifs.filesystem.POIFSWriterEvent;
-import org.apache.poi.poifs.filesystem.POIFSWriterListener;
 import org.apache.poi.util.IOUtils;
 import org.apache.poi.util.LittleEndianByteArrayOutputStream;
 import org.apache.poi.util.LittleEndianConsts;
@@ -78,13 +76,11 @@ public class DataSpaceMapUtils {
             dir.getEntry(fileName).delete();
         }
         
-        return dir.createDocument(fileName, bos.getWriteIndex(), new POIFSWriterListener(){
-            public void processPOIFSWriterEvent(POIFSWriterEvent event) {
-                try {
-                    event.getStream().write(buf, 0, event.getLimit());
-                } catch (IOException e) {
-                    throw new EncryptedDocumentException(e);
-                }
+        return dir.createDocument(fileName, bos.getWriteIndex(), event -> {
+            try {
+                event.getStream().write(buf, 0, event.getLimit());
+            } catch (IOException e) {
+                throw new EncryptedDocumentException(e);
             }
         });
     }   

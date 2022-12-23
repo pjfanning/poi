@@ -312,6 +312,15 @@ public interface CellStyle {
     void setFillBackgroundColor(short bg);
 
     /**
+     * Set the background fill color.
+     * Uses a {@link org.apache.poi.ss.usermodel.Color} instead of an indexed color.
+     *
+     * @param color org.apache.poi.ss.usermodel.Color to set
+     * @since POI 5.2.3
+     */
+    void setFillBackgroundColor(Color color);
+
+    /**
      * get the background fill color, if the fill
      *  is defined with an indexed color.
      * @return fill color index, or 0 if not indexed (XSSF only)
@@ -333,6 +342,15 @@ public interface CellStyle {
      * @param bg  color
      */
     void setFillForegroundColor(short bg);
+
+    /**
+     * Set the foreground fill color.
+     * Uses a {@link org.apache.poi.ss.usermodel.Color} instead of an indexed color.
+     *
+     * @param color org.apache.poi.ss.usermodel.Color to set
+     * @since POI 5.2.3
+     */
+    void setFillForegroundColor(Color color);
 
     /**
      * get the foreground fill color, if the fill  

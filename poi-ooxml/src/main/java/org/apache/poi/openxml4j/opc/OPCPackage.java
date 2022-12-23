@@ -61,6 +61,7 @@ import org.apache.poi.openxml4j.opc.internal.unmarshallers.UnmarshallContext;
 import org.apache.poi.openxml4j.util.ZipEntrySource;
 import org.apache.poi.util.IOUtils;
 import org.apache.poi.util.NotImplemented;
+import org.apache.poi.util.StringUtil;
 
 /**
  * Represents a container that can store multiple data objects.
@@ -135,8 +136,8 @@ public abstract class OPCPackage implements RelationshipSource, Closeable {
     /**
      * Constructor.
      *
-     * @param access
-     *            Package access.
+     * @param access Package access.
+     * @throws OpenXML4JRuntimeException if there are issues creating properties part
      */
     OPCPackage(PackageAccess access) {
         if (getClass() != ZipPackage.class) {
@@ -234,7 +235,7 @@ public abstract class OPCPackage implements RelationshipSource, Closeable {
      */
     public static OPCPackage open(String path, PackageAccess access)
             throws InvalidFormatException, InvalidOperationException {
-        if (path == null || path.trim().isEmpty()) {
+        if (StringUtil.isBlank(path)) {
             throw new IllegalArgumentException("'path' must be given");
         }
 
@@ -281,7 +282,7 @@ public abstract class OPCPackage implements RelationshipSource, Closeable {
            throw new IllegalArgumentException("file must not be a directory");
        }
 
-       OPCPackage pack = new ZipPackage(file, access);
+       OPCPackage pack = new ZipPackage(file, access); //NOSONAR
        try {
            if (pack.partList == null && access != PackageAccess.WRITE) {
                pack.getParts();
@@ -458,8 +459,7 @@ public abstract class OPCPackage implements RelationshipSource, Closeable {
             return;
         }
 
-        if (this.originalPackagePath != null
-                && !this.originalPackagePath.trim().isEmpty()) {
+        if (StringUtil.isNotBlank(this.originalPackagePath)) {
             File targetFile = new File(this.originalPackagePath);
             if (!targetFile.exists()
                     || !(this.originalPackagePath
@@ -1413,7 +1413,7 @@ public abstract class OPCPackage implements RelationshipSource, Closeable {
         try {
             partMarshallers.remove(new ContentType(contentType));
         } catch (InvalidFormatException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException(e);
         }
     }
 
@@ -1427,7 +1427,7 @@ public abstract class OPCPackage implements RelationshipSource, Closeable {
         try {
             partUnmarshallers.remove(new ContentType(contentType));
         } catch (InvalidFormatException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException(e);
         }
     }
 
@@ -1469,7 +1469,7 @@ public abstract class OPCPackage implements RelationshipSource, Closeable {
 
         this.throwExceptionIfReadOnly();
 
-        // You shouldn't save the the same file, do a close instead
+        // You shouldn't save the same file, do a close instead
         if(targetFile.exists() &&
                 targetFile.getAbsolutePath().equals(this.originalPackagePath)) {
             throw new InvalidOperationException(

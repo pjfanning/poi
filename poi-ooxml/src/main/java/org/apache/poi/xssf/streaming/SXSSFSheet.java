@@ -19,14 +19,10 @@ package org.apache.poi.xssf.streaming;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Spliterator;
-import java.util.TreeMap;
+import java.util.*;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.poi.ss.SpreadsheetVersion;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellAddress;
@@ -35,6 +31,7 @@ import org.apache.poi.ss.util.PaneInformation;
 import org.apache.poi.ss.util.SheetUtil;
 import org.apache.poi.util.Internal;
 import org.apache.poi.util.NotImplemented;
+import org.apache.poi.util.Removal;
 import org.apache.poi.xssf.usermodel.*;
 import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTColor;
 import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTSheetFormatPr;
@@ -46,21 +43,47 @@ import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTWorksheet;
  * Streaming version of XSSFSheet implementing the "BigGridDemo" strategy.
  */
 public class SXSSFSheet implements Sheet, OoxmlSheetExtensions {
+    private static final Logger LOG = LogManager.getLogger(SXSSFSheet.class);
+
     /*package*/ final XSSFSheet _sh;
     protected final SXSSFWorkbook _workbook;
     private final TreeMap<Integer,SXSSFRow> _rows = new TreeMap<>();
     protected SheetDataWriter _writer;
     private int _randomAccessWindowSize = SXSSFWorkbook.DEFAULT_WINDOW_SIZE;
-    protected final AutoSizeColumnTracker _autoSizeColumnTracker;
+    protected AutoSizeColumnTracker _autoSizeColumnTracker;
     private int outlineLevelRow;
     private int lastFlushedRowNumber = -1;
     private boolean allFlushed;
+    private int leftMostColumn = SpreadsheetVersion.EXCEL2007.getLastColumnIndex();
+    private int rightMostColumn;
 
     protected SXSSFSheet(SXSSFWorkbook workbook, XSSFSheet xSheet, int randomAccessWindowSize) {
         _workbook = workbook;
         _sh = xSheet;
+        calculateLeftAndRightMostColumns(xSheet);
         setRandomAccessWindowSize(randomAccessWindowSize);
         _autoSizeColumnTracker = new AutoSizeColumnTracker(this);
+    }
+
+    private void calculateLeftAndRightMostColumns(XSSFSheet xssfSheet) {
+        if (_workbook.shouldCalculateSheetDimensions()) {
+            int rowCount = 0;
+            int leftMostColumn = Integer.MAX_VALUE;
+            int rightMostColumn = 0;
+            for (Row row : xssfSheet) {
+                rowCount++;
+                if (row.getFirstCellNum() < leftMostColumn) {
+                    final int first = row.getFirstCellNum();
+                    final int last = row.getLastCellNum() - 1;
+                    leftMostColumn = Math.min(first, leftMostColumn);
+                    rightMostColumn = Math.max(last, rightMostColumn);
+                }
+            }
+            if (rowCount > 0) {
+                this.leftMostColumn = leftMostColumn;
+                this.rightMostColumn = rightMostColumn;
+            }
+        }
     }
 
     public SXSSFSheet(SXSSFWorkbook workbook, XSSFSheet xSheet) throws IOException {
@@ -68,7 +91,11 @@ public class SXSSFSheet implements Sheet, OoxmlSheetExtensions {
         _sh = xSheet;
         _writer = workbook.createSheetDataWriter();
         setRandomAccessWindowSize(_workbook.getRandomAccessWindowSize());
-        _autoSizeColumnTracker = new AutoSizeColumnTracker(this);
+        try {
+            _autoSizeColumnTracker = new AutoSizeColumnTracker(this);
+        } catch (Exception e) {
+            LOG.atWarn().log("Failed to create AutoSizeColumnTracker, possibly due to fonts not being installed in your OS", e);
+        }
     }
 
     /**
@@ -127,7 +154,7 @@ public class SXSSFSheet implements Sheet, OoxmlSheetExtensions {
             try {
                 flushRows(_randomAccessWindowSize);
             } catch (IOException ioe) {
-                throw new RuntimeException(ioe);
+                throw new IllegalStateException(ioe);
             }
         }
         return newRow;
@@ -773,21 +800,58 @@ public class SXSSFSheet implements Sheet, OoxmlSheetExtensions {
      *
      * @param margin which margin to get
      * @return the size of the margin
+     * @deprecated use {@link #getMargin(PageMargin)}
      */
     @Override
+    @Deprecated
+    @Removal(version = "7.0.0")
     public double getMargin(short margin) {
+        return _sh.getMargin(margin);
+    }
+
+
+    /**
+     * Gets the size of the margin in inches.
+     *
+     * @param margin which margin to get
+     * @return the size of the margin
+     * @since POI 5.2.3
+     */
+    @Override
+    public double getMargin(PageMargin margin) {
         return _sh.getMargin(margin);
     }
 
     /**
      * Sets the size of the margin in inches.
      *
-     * @param margin which margin to get
+     * @param margin which margin to set
      * @param size the size of the margin
+     * @see Sheet#LeftMargin
+     * @see Sheet#RightMargin
+     * @see Sheet#TopMargin
+     * @see Sheet#BottomMargin
+     * @see Sheet#HeaderMargin
+     * @see Sheet#FooterMargin
+     * @deprecated use {@link #setMargin(PageMargin, double)} instead
      */
     @Override
+    @Deprecated
+    @Removal(version = "7.0.0")
     public void setMargin(short margin, double size) {
-        _sh.setMargin(margin,size);
+        _sh.setMargin(margin, size);
+    }
+
+    /**
+     * Sets the size of the margin in inches.
+     *
+     * @param margin which margin to set
+     * @param size the size of the margin
+     * @since POI 5.2.3
+     */
+    @Override
+    public void setMargin(PageMargin margin, double size) {
+        _sh.setMargin(margin, size);
     }
 
     /**
@@ -917,7 +981,7 @@ public class SXSSFSheet implements Sheet, OoxmlSheetExtensions {
     @NotImplemented
     @Override
     public void shiftRows(int startRow, int endRow, int n) {
-        throw new RuntimeException("Not Implemented");
+        throw new IllegalStateException("Not Implemented");
     }
 
     /**
@@ -941,12 +1005,12 @@ public class SXSSFSheet implements Sheet, OoxmlSheetExtensions {
     @NotImplemented
     @Override
     public void shiftRows(int startRow, int endRow, int n, boolean copyRowHeight, boolean resetOriginalRowHeight) {
-        throw new RuntimeException("Not Implemented");
+        throw new IllegalStateException("Not Implemented");
     }
 
     /**
      * Creates a split (freezepane). Any existing freezepane or split pane is overwritten.
-     * @param colSplit      Horizonatal position of split.
+     * @param colSplit      Horizontal position of split.
      * @param rowSplit      Vertical position of split.
      * @param leftmostColumn   Left column visible in right pane.
      * @param topRow        Top row visible in bottom pane
@@ -958,29 +1022,49 @@ public class SXSSFSheet implements Sheet, OoxmlSheetExtensions {
 
     /**
      * Creates a split (freezepane). Any existing freezepane or split pane is overwritten.
-     * @param colSplit      Horizonatal position of split.
+     * @param colSplit      Horizontal position of split.
      * @param rowSplit      Vertical position of split.
      */
     @Override
     public void createFreezePane(int colSplit, int rowSplit) {
-        _sh.createFreezePane(colSplit,rowSplit);
+        _sh.createFreezePane(colSplit, rowSplit);
     }
+
 
     /**
      * Creates a split pane. Any existing freezepane or split pane is overwritten.
-     * @param xSplitPos      Horizonatal position of split (in 1/20th of a point).
+     * @param xSplitPos      Horizontal position of split (in 1/20th of a point).
      * @param ySplitPos      Vertical position of split (in 1/20th of a point).
      * @param topRow        Top row visible in bottom pane
      * @param leftmostColumn   Left column visible in right pane.
      * @param activePane    Active pane.  One of: PANE_LOWER_RIGHT,
-     *                      PANE_UPPER_RIGHT, PANE_LOWER_LEFT, PANE_UPPER_LEFT
+     *                      PANE_UPPER_RIGHT, PANE_LOWER_LEFT, PANE_UPPER_LEFT (but there is a
+     *                      <a href="https://bz.apache.org/bugzilla/show_bug.cgi?id=66173">bug</a>, so add 1)
      * @see #PANE_LOWER_LEFT
      * @see #PANE_LOWER_RIGHT
      * @see #PANE_UPPER_LEFT
      * @see #PANE_UPPER_RIGHT
+     * @deprecated use {@link #createSplitPane(int, int, int, int, PaneType)}
      */
     @Override
+    @Deprecated
+    @Removal(version = "7.0.0")
     public void createSplitPane(int xSplitPos, int ySplitPos, int leftmostColumn, int topRow, int activePane) {
+        _sh.createSplitPane(xSplitPos, ySplitPos, leftmostColumn, topRow, activePane);
+    }
+
+    /**
+     * Creates a split pane. Any existing freezepane or split pane is overwritten.
+     * @param xSplitPos      Horizontal position of split (in 1/20th of a point).
+     * @param ySplitPos      Vertical position of split (in 1/20th of a point).
+     * @param topRow        Top row visible in bottom pane
+     * @param leftmostColumn   Left column visible in right pane.
+     * @param activePane    Active pane.
+     * @see PaneType
+     * @since POI 5.2.3
+     */
+    @Override
+    public void createSplitPane(int xSplitPos, int ySplitPos, int leftmostColumn, int topRow, PaneType activePane) {
         _sh.createSplitPane(xSplitPos, ySplitPos, leftmostColumn, topRow, activePane);
     }
 
@@ -1269,7 +1353,7 @@ public class SXSSFSheet implements Sheet, OoxmlSheetExtensions {
      *
      * @param row   start row of a groupped range of rows (0-based)
      * @param collapse whether to expand/collapse the detail rows
-     * @throws RuntimeException if collapse is false as this is not implemented for SXSSF.
+     * @throws IllegalStateException if collapse is false as this is not implemented for SXSSF.
      */
     @Override
     public void setRowGroupCollapsed(int row, boolean collapse) {
@@ -1277,7 +1361,7 @@ public class SXSSFSheet implements Sheet, OoxmlSheetExtensions {
             collapseRow(row);
         } else {
             //expandRow(rowIndex);
-            throw new RuntimeException("Unable to expand row: Not Implemented");
+            throw new IllegalStateException("Unable to expand row: Not Implemented");
         }
     }
 
@@ -1353,11 +1437,15 @@ public class SXSSFSheet implements Sheet, OoxmlSheetExtensions {
      * If <code>column</code> is already tracked, this call does nothing.
      *
      * @param column the column to track for auto-sizing
+     * @throws IllegalStateException if autoSizeColumnTracker failed to initialize (possibly due to fonts not being installed in your OS)
      * @since 3.14beta1
      * @see #trackColumnsForAutoSizing(Collection)
      * @see #trackAllColumnsForAutoSizing()
      */
     public void trackColumnForAutoSizing(int column) {
+        if (_autoSizeColumnTracker == null) {
+            throw new IllegalStateException("Cannot trackColumnForAutoSizing because autoSizeColumnTracker failed to initialize (possibly due to fonts not being installed in your OS)");
+        }
         _autoSizeColumnTracker.trackColumn(column);
     }
 
@@ -1367,18 +1455,26 @@ public class SXSSFSheet implements Sheet, OoxmlSheetExtensions {
      * Any column in <code>columns</code> that are already tracked are ignored by this call.
      *
      * @param columns the columns to track for auto-sizing
+     * @throws IllegalStateException if autoSizeColumnTracker failed to initialize (possibly due to fonts not being installed in your OS)
      * @since 3.14beta1
      */
     public void trackColumnsForAutoSizing(Collection<Integer> columns) {
+        if (_autoSizeColumnTracker == null) {
+            throw new IllegalStateException("Cannot trackColumnForAutoSizing because autoSizeColumnTracker failed to initialize (possibly due to fonts not being installed in your OS)");
+        }
         _autoSizeColumnTracker.trackColumns(columns);
     }
 
     /**
      * Tracks all columns in the sheet for auto-sizing. If this is called, individual columns do not need to be tracked.
      * Because determining the best-fit width for a cell is expensive, this may affect the performance.
+     * @throws IllegalStateException if autoSizeColumnTracker failed to initialize (possibly due to fonts not being installed in your OS)
      * @since 3.14beta1
      */
     public void trackAllColumnsForAutoSizing() {
+        if (_autoSizeColumnTracker == null) {
+            throw new IllegalStateException("Cannot trackColumnForAutoSizing because autoSizeColumnTracker failed to initialize (possibly due to fonts not being installed in your OS)");
+        }
         _autoSizeColumnTracker.trackAllColumns();
     }
 
@@ -1394,7 +1490,7 @@ public class SXSSFSheet implements Sheet, OoxmlSheetExtensions {
      * @see #untrackAllColumnsForAutoSizing()
      */
     public boolean untrackColumnForAutoSizing(int column) {
-        return _autoSizeColumnTracker.untrackColumn(column);
+        return _autoSizeColumnTracker != null && _autoSizeColumnTracker.untrackColumn(column);
     }
 
     /**
@@ -1407,7 +1503,7 @@ public class SXSSFSheet implements Sheet, OoxmlSheetExtensions {
      * @since 3.14beta1
      */
     public boolean untrackColumnsForAutoSizing(Collection<Integer> columns) {
-        return _autoSizeColumnTracker.untrackColumns(columns);
+        return _autoSizeColumnTracker != null && _autoSizeColumnTracker.untrackColumns(columns);
     }
 
     /**
@@ -1416,7 +1512,9 @@ public class SXSSFSheet implements Sheet, OoxmlSheetExtensions {
      * @since 3.14beta1
      */
     public void untrackAllColumnsForAutoSizing() {
-        _autoSizeColumnTracker.untrackAllColumns();
+        if (_autoSizeColumnTracker != null) {
+            _autoSizeColumnTracker.untrackAllColumns();
+        }
     }
 
     /**
@@ -1427,7 +1525,7 @@ public class SXSSFSheet implements Sheet, OoxmlSheetExtensions {
      * @since 3.14beta1
      */
     public boolean isColumnTrackedForAutoSizing(int column) {
-        return _autoSizeColumnTracker.isColumnTracked(column);
+        return _autoSizeColumnTracker != null && _autoSizeColumnTracker.isColumnTracked(column);
     }
 
     /**
@@ -1439,7 +1537,7 @@ public class SXSSFSheet implements Sheet, OoxmlSheetExtensions {
      * @since 3.14beta1
      */
     public Set<Integer> getTrackedColumnsForAutoSizing() {
-        return _autoSizeColumnTracker.getTrackedColumns();
+        return _autoSizeColumnTracker == null ? Collections.emptySet() : _autoSizeColumnTracker.getTrackedColumns();
     }
 
     /**
@@ -1490,9 +1588,14 @@ public class SXSSFSheet implements Sheet, OoxmlSheetExtensions {
      *
      * @param column the column index to auto-size
      * @param useMergedCells whether to use the contents of merged cells when calculating the width of the column
+     * @throws IllegalStateException if autoSizeColumnTracker failed to initialize (possibly due to fonts not being installed in your OS)
      */
     @Override
     public void autoSizeColumn(int column, boolean useMergedCells) {
+        if (_autoSizeColumnTracker == null) {
+            throw new IllegalStateException("Cannot trackColumnForAutoSizing because autoSizeColumnTracker failed to initialize (possibly due to fonts not being installed in your OS)");
+        }
+
         // Multiple calls to autoSizeColumn need to look up the best-fit width
         // of rows already flushed to disk plus re-calculate the best-fit width
         // of rows in the current window. It isn't safe to update the column
@@ -1658,7 +1761,7 @@ public class SXSSFSheet implements Sheet, OoxmlSheetExtensions {
         // corrupted .xlsx files as rows appear multiple times in the resulting sheetX.xml files
         // return _sh.setArrayFormula(formula, range);
 
-        throw new RuntimeException("Not Implemented");
+        throw new IllegalStateException("Not Implemented");
     }
 
     /**
@@ -1673,7 +1776,7 @@ public class SXSSFSheet implements Sheet, OoxmlSheetExtensions {
         // corrupted .xlsx files as rows appear multiple times in the resulting sheetX.xml files
         // return _sh.removeArrayFormula(cell);
 
-        throw new RuntimeException("Not Implemented");
+        throw new IllegalStateException("Not Implemented");
     }
 
     @Override
@@ -1803,9 +1906,13 @@ public class SXSSFSheet implements Sheet, OoxmlSheetExtensions {
         if (firstRowNum!=null) {
             int rowIndex = firstRowNum;
             SXSSFRow row = _rows.get(firstRowNum);
-            // Update the best fit column widths for auto-sizing just before the rows are flushed
-            _autoSizeColumnTracker.updateColumnWidths(row);
-            if (_writer != null) _writer.writeRow(rowIndex, row);
+            if (_autoSizeColumnTracker != null) {
+                // Update the best fit column widths for auto-sizing just before the rows are flushed
+                _autoSizeColumnTracker.updateColumnWidths(row);
+            }
+            if (_writer != null) {
+                _writer.writeRow(rowIndex, row);
+            }
             _rows.remove(firstRowNum);
             lastFlushedRowNumber = rowIndex;
         }
@@ -2047,5 +2154,22 @@ public class SXSSFSheet implements Sheet, OoxmlSheetExtensions {
     @Override
     public void shiftColumns(int startColumn, int endColumn, int n){
         throw new UnsupportedOperationException("Not Implemented");
+    }
+
+    void trackNewCell(SXSSFCell cell) {
+        leftMostColumn = Math.min(cell.getColumnIndex(), leftMostColumn);
+        rightMostColumn = Math.max(cell.getColumnIndex(), rightMostColumn);
+    }
+
+    void deriveDimension() {
+        if (_workbook.shouldCalculateSheetDimensions()) {
+            try {
+                CellRangeAddress cellRangeAddress = new CellRangeAddress(
+                        getFirstRowNum(), getLastRowNum(), leftMostColumn, rightMostColumn);
+                _sh.setDimensionOverride(cellRangeAddress);
+            } catch (Exception e) {
+                LOG.atDebug().log("Failed to set dimension details on sheet", e);
+            }
+        }
     }
 }

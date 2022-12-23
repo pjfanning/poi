@@ -142,7 +142,7 @@ public abstract class XDDFChartData {
     public abstract XDDFChartData.Series addSeries(XDDFDataSource<?> category,
             XDDFNumericalDataSource<? extends Number> values);
 
-    public abstract class Series {
+    public abstract static class Series {
         protected abstract CTSerTx getSeriesText();
 
         public abstract void setShowLeaderLines(boolean showLeaderLines);
@@ -178,6 +178,20 @@ public abstract class XDDFChartData {
             this.valuesData = values;
         }
 
+        /**
+         * Set the Chart Series title.
+         * @param title chart series title
+         * @since POI 5.2.3
+         */
+        public void setTitle(String title) {
+            setTitle(title, null);
+        }
+
+        /**
+         * Set the Chart Series title.
+         * @param title chart series title
+         * @param titleRef cell reference
+         */
         public void setTitle(String title, CellReference titleRef) {
             if (titleRef == null) {
                 getSeriesText().setV(title);
@@ -366,7 +380,7 @@ public abstract class XDDFChartData {
             return strCache;
         }
 
-        private CTNumData retrieveNumCache(final CTNumDataSource numDataSource, XDDFDataSource<?> data) {
+        protected CTNumData retrieveNumCache(final CTNumDataSource numDataSource, XDDFDataSource<?> data) {
             CTNumData numCache;
             if (data.isReference()) {
                 CTNumRef numRef;

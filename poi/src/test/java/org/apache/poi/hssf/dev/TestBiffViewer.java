@@ -41,6 +41,7 @@ class TestBiffViewer extends BaseTestIteratingXLS {
 
         excludes.put("61300.xls", IndexOutOfBoundsException.class);
         excludes.put("poi-fuzz.xls", RecordFormatException.class);
+        excludes.put("protected_66115.xls", RecordFormatException.class);
 
         return excludes;
     }

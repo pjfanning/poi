@@ -44,6 +44,8 @@ import org.openxmlformats.schemas.drawingml.x2006.main.*;
 import org.openxmlformats.schemas.presentationml.x2006.main.CTPlaceholder;
 import org.openxmlformats.schemas.presentationml.x2006.main.STPlaceholderType;
 
+import static org.apache.poi.xssf.usermodel.XSSFRelation.NS_PRESENTATIONML;
+
 /**
  * Represents a paragraph of text within the containing text body.
  * The paragraph is the highest level text separation mechanism.
@@ -66,20 +68,17 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
         _runs = new ArrayList<>();
         _shape = shape;
 
-        XmlCursor c = _p.newCursor();
-        try {
+        try (XmlCursor c = _p.newCursor()) {
             if (c.toFirstChild()) {
                 do {
                     XmlObject r = c.getObject();
                     if (r instanceof CTTextLineBreak) {
                         _runs.add(new XSLFLineBreak((CTTextLineBreak)r, this));
                     } else if (r instanceof CTRegularTextRun || r instanceof CTTextField) {
-                        _runs.add(new XSLFTextRun(r, this));
+                        _runs.add(this.newTextRun(r));
                     }
                 } while (c.toNextSibling());
             }
-        } finally {
-            c.dispose();
         }
     }
 
@@ -746,13 +745,12 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
         int level = getIndentLevel();
 
         // wind up and find the root master sheet which must be slide master
-        final String nsPML = "http://schemas.openxmlformats.org/presentationml/2006/main";
+        final String nsPML = NS_PRESENTATIONML;
         XSLFSheet masterSheet = _shape.getSheet();
         for (XSLFSheet m = masterSheet; m != null; m = (XSLFSheet)m.getMasterSheet()) {
             masterSheet = m;
             XmlObject xo = masterSheet.getXmlObject();
-            XmlCursor cur = xo.newCursor();
-            try {
+            try (XmlCursor cur = xo.newCursor()) {
                 cur.push();
                 if ((cur.toChild(nsPML, "txStyles") && cur.toChild(nsPML, defaultStyleSelector)) ||
                     (cur.pop() && cur.toChild(nsPML, "notesStyle"))) {
@@ -765,8 +763,6 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
                         level--;
                     }
                 }
-            } finally {
-                cur.dispose();
             }
         }
 
@@ -805,26 +801,11 @@ public class XSLFTextParagraph implements TextParagraph<XSLFShape,XSLFTextParagr
             thisP.removeFld(i-1);
         }
 
-        XmlCursor thisC = thisP.newCursor();
-        try {
-            thisC.toEndToken();
-            XmlCursor otherC = otherP.newCursor();
-            try {
-                otherC.copyXmlContents(thisC);
-            } finally {
-                otherC.dispose();
-            }
-        } finally {
-            thisC.dispose();
-        }
-
         for (XSLFTextRun tr : other.getTextRuns()) {
-            XmlObject xo = tr.getXmlObject();
-            XSLFTextRun run = (xo instanceof CTTextLineBreak)
-                ? newTextRun((CTTextLineBreak)xo)
-                : newTextRun(xo);
+            XmlObject xo = tr.getXmlObject().copy();
+            XSLFTextRun run = addNewTextRun();
+            run.getXmlObject().set(xo);
             run.copy(tr);
-            _runs.add(run);
         }
 
         // set properties again, in case we are based on a different

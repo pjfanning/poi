@@ -63,6 +63,7 @@ import org.apache.poi.sl.usermodel.TextShape;
 import org.apache.poi.sl.usermodel.TextShape.TextDirection;
 import org.apache.poi.util.Internal;
 import org.apache.poi.util.LocaleUtil;
+import org.apache.poi.util.StringUtil;
 import org.apache.poi.util.Units;
 
 public class DrawTextParagraph implements Drawable {
@@ -242,7 +243,7 @@ public class DrawTextParagraph implements Drawable {
     }
 
     public boolean isEmptyParagraph() {
-        return (lines.isEmpty() || rawText.trim().isEmpty());
+        return (lines.isEmpty() || StringUtil.isBlank(rawText));
     }
 
     @Override
@@ -367,9 +368,9 @@ public class DrawTextParagraph implements Drawable {
             buSz = 100d;
         }
         if (buSz > 0) {
-            fontSize *= buSz* 0.01;
+            fontSize *= (float) (buSz * 0.01);
         } else {
-            fontSize = (float)-buSz;
+            fontSize = (float) -buSz;
         }
 
         String buFontStr = bulletStyle.getBulletFont();

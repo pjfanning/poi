@@ -107,16 +107,21 @@ public class RecordUtil
         byte numBits = 0;
         int mask = (int) Long.parseLong( bitMask.substring( 2 ), 16 );
 
-        if ( parentType.equals( "byte" ) )
-            parentSize = 8;
-        else if ( parentType.equals( "short" ) )
-            parentSize = 16;
-        else if ( parentType.equals( "int" ) )
-            parentSize = 32;
+        switch (parentType) {
+            case "byte":
+                parentSize = 8;
+                break;
+            case "short":
+                parentSize = 16;
+                break;
+            case "int":
+                parentSize = 32;
+                break;
+        }
 
         for ( int x = 0; x < parentSize; x++ )
         {
-            numBits += ( mask >> x ) & 0x1;
+            numBits += (byte) (( mask >> x ) & 0x1);
         }
 
         if ( numBits == 1 )

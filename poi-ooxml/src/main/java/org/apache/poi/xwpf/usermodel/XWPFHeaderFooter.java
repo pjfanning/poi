@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.poi.common.usermodel.PictureType;
 import org.apache.poi.ooxml.POIXMLDocumentPart;
 import org.apache.poi.ooxml.POIXMLException;
 import org.apache.poi.ooxml.POIXMLRelation;
@@ -233,14 +234,31 @@ public abstract class XWPFHeaderFooter extends POIXMLDocumentPart implements IBo
      * @param format      The format of the picture.
      * @return the index to this picture (0 based), the added picture can be obtained from {@link #getAllPictures()} .
      * @throws InvalidFormatException If the format of the picture is not known.
+     * @see #addPictureData(byte[], PictureType)
      */
     public String addPictureData(byte[] pictureData, int format) throws InvalidFormatException {
-        XWPFPictureData xwpfPicData = document.findPackagePictureData(pictureData, format);
-        POIXMLRelation relDesc = XWPFPictureData.RELATIONS[format];
+        return addPictureData(pictureData, PictureType.findByOoxmlId(format));
+    }
+
+    /**
+     * Adds a picture to the document.
+     *
+     * @param pictureData The picture data
+     * @param pictureType The {@link PictureType} of the picture.
+     * @return the index to this picture (0 based), the added picture can be obtained from {@link #getAllPictures()} .
+     * @throws InvalidFormatException If the format of the picture is not known.
+     * @since POI 5.2.3
+     */
+    public String addPictureData(byte[] pictureData, PictureType pictureType) throws InvalidFormatException {
+        if (pictureType == null) {
+            throw new InvalidFormatException("pictureType is not supported");
+        }
+        XWPFPictureData xwpfPicData = document.findPackagePictureData(pictureData);
+        POIXMLRelation relDesc = XWPFPictureData.RELATIONS[pictureType.ooxmlId];
 
         if (xwpfPicData == null) {
             /* Part doesn't exist, create a new one */
-            int idx = document.getNextPicNameNumber(format);
+            int idx = document.getNextPicNameNumber(pictureType);
             xwpfPicData = (XWPFPictureData) createRelationship(relDesc, XWPFFactory.getInstance(), idx);
             /* write bytes to new part */
             PackagePart picDataPart = xwpfPicData.getPackagePart();
@@ -277,10 +295,26 @@ public abstract class XWPFHeaderFooter extends POIXMLDocumentPart implements IBo
      * @return the index to this picture (0 based), the added picture can be obtained from {@link #getAllPictures()} .
      * @throws InvalidFormatException If the format of the picture is not known.
      * @throws IOException If reading the picture-data from the stream fails.
+     * @see #addPictureData(InputStream, PictureType)
      */
     public String addPictureData(InputStream is, int format) throws InvalidFormatException, IOException {
         byte[] data = IOUtils.toByteArrayWithMaxLength(is, XWPFPictureData.getMaxImageSize());
         return addPictureData(data, format);
+    }
+
+    /**
+     * Adds a picture to the document.
+     *
+     * @param is     The stream to read image from
+     * @param pictureType The {@link PictureType} of the picture.
+     * @return the index to this picture (0 based), the added picture can be obtained from {@link #getAllPictures()} .
+     * @throws InvalidFormatException If the format of the picture is not known.
+     * @throws IOException If reading the picture-data from the stream fails.
+     * @since POI 5.2.3
+     */
+    public String addPictureData(InputStream is, PictureType pictureType) throws InvalidFormatException, IOException {
+        byte[] data = IOUtils.toByteArrayWithMaxLength(is, XWPFPictureData.getMaxImageSize());
+        return addPictureData(data, pictureType);
     }
 
     /**
@@ -290,7 +324,7 @@ public abstract class XWPFHeaderFooter extends POIXMLDocumentPart implements IBo
      */
     public XWPFPictureData getPictureDataByID(String blipID) {
         POIXMLDocumentPart relatedPart = getRelationById(blipID);
-        if (relatedPart != null && relatedPart instanceof XWPFPictureData) {
+        if (relatedPart instanceof XWPFPictureData) {
             return (XWPFPictureData) relatedPart;
         }
         return null;
@@ -330,11 +364,8 @@ public abstract class XWPFHeaderFooter extends POIXMLDocumentPart implements IBo
     public void removeParagraph(XWPFParagraph paragraph) {
         if (paragraphs.contains(paragraph)) {
             CTP ctP = paragraph.getCTP();
-            XmlCursor c = ctP.newCursor();
-            try {
+            try (XmlCursor c = ctP.newCursor()) {
                 c.removeXml();
-            } finally {
-                c.dispose();
             }
             paragraphs.remove(paragraph);
             bodyElements.remove(paragraph);
@@ -349,11 +380,8 @@ public abstract class XWPFHeaderFooter extends POIXMLDocumentPart implements IBo
     public void removeTable(XWPFTable table) {
         if (tables.contains(table)) {
             CTTbl ctTbl = table.getCTTbl();
-            XmlCursor c = ctTbl.newCursor();
-            try {
+            try (XmlCursor c = ctTbl.newCursor()) {
                 c.removeXml();
-            } finally {
-                c.dispose();
             }
             tables.remove(table);
             bodyElements.remove(table);
@@ -364,11 +392,8 @@ public abstract class XWPFHeaderFooter extends POIXMLDocumentPart implements IBo
      * Clears all paragraphs and tables from this header / footer
      */
     public void clearHeaderFooter() {
-       XmlCursor c = headerFooter.newCursor();
-       try {
+       try (XmlCursor c = headerFooter.newCursor()) {
            c.removeXmlContents();
-       } finally {
-           c.dispose();
        }
        paragraphs.clear();
        tables.clear();
@@ -400,11 +425,8 @@ public abstract class XWPFHeaderFooter extends POIXMLDocumentPart implements IBo
                 paragraphs.add(pos, newP);
             }
             int i = 0;
-            final XmlCursor p2 = p.newCursor();
-            try {
+            try (final XmlCursor p2 = p.newCursor()) {
                 cursor.toCursor(p2);
-            } finally {
-                p2.dispose();
             }
             while (cursor.toPrevSibling()) {
                 o = cursor.getObject();
@@ -412,12 +434,9 @@ public abstract class XWPFHeaderFooter extends POIXMLDocumentPart implements IBo
                     i++;
             }
             bodyElements.add(i, newP);
-            final XmlCursor p3 = p.newCursor();
-            try {
+            try(final XmlCursor p3 = p.newCursor()) {
                 cursor.toCursor(p3);
                 cursor.toEndToken();
-            } finally {
-                p3.dispose();
             }
             return newP;
         }
@@ -449,24 +468,18 @@ public abstract class XWPFHeaderFooter extends POIXMLDocumentPart implements IBo
                 tables.add(pos, newT);
             }
             int i = 0;
-            final XmlCursor cursor2 = t.newCursor();
-            try {
+            try (final XmlCursor cursor2 = t.newCursor()) {
                 while (cursor2.toPrevSibling()) {
                     o = cursor2.getObject();
                     if (o instanceof CTP || o instanceof CTTbl) {
                         i++;
                     }
                 }
-            } finally {
-                cursor2.dispose();
             }
             bodyElements.add(i, newT);
-            final XmlCursor cursor3 = t.newCursor();
-            try {
+            try(final XmlCursor cursor3 = t.newCursor()) {
                 cursor.toCursor(cursor3);
                 cursor.toEndToken();
-            } finally {
-                cursor3.dispose();
             }
             return newT;
         }
@@ -477,13 +490,9 @@ public abstract class XWPFHeaderFooter extends POIXMLDocumentPart implements IBo
      * verifies that cursor is on the right position
      */
     private boolean isCursorInHdrF(XmlCursor cursor) {
-        XmlCursor verify = cursor.newCursor();
-        try {
+        try (XmlCursor verify = cursor.newCursor()) {
             verify.toParent();
-            boolean result = (verify.getObject() == this.headerFooter);
-            return result;
-        } finally {
-            verify.dispose();
+            return (verify.getObject() == this.headerFooter);
         }
     }
 
@@ -526,8 +535,7 @@ public abstract class XWPFHeaderFooter extends POIXMLDocumentPart implements IBo
         tables = new ArrayList<>();
         // parse the document with cursor and add
         // the XmlObject to its lists
-        XmlCursor cursor = headerFooter.newCursor();
-        try {
+        try (XmlCursor cursor = headerFooter.newCursor()) {
             cursor.selectPath("./*");
             while (cursor.toNextSelection()) {
                 XmlObject o = cursor.getObject();
@@ -542,8 +550,6 @@ public abstract class XWPFHeaderFooter extends POIXMLDocumentPart implements IBo
                     bodyElements.add(t);
                 }
             }
-        } finally {
-            cursor.dispose();
         }
     }
 
@@ -554,8 +560,7 @@ public abstract class XWPFHeaderFooter extends POIXMLDocumentPart implements IBo
     public XWPFTableCell getTableCell(CTTc cell) {
         XmlObject o;
         CTRow row;
-        final XmlCursor cursor = cell.newCursor();
-        try {
+        try (XmlCursor cursor = cell.newCursor()) {
             cursor.toParent();
             o = cursor.getObject();
             if (!(o instanceof CTRow)) {
@@ -564,8 +569,6 @@ public abstract class XWPFHeaderFooter extends POIXMLDocumentPart implements IBo
             row = (CTRow) o;
             cursor.toParent();
             o = cursor.getObject();
-        } finally {
-            cursor.dispose();
         }
         if (!(o instanceof CTTbl)) {
             return null;

@@ -240,14 +240,11 @@ public class XSLFPictureShape extends XSLFSimpleShape
         if (bitmapId == -1) {
             extBitmap = extLst.addNewExt();
             extBitmap.setUri(BITMAP_URI);
-            XmlCursor cur = extBitmap.newCursor();
-            try {
+            try (XmlCursor cur = extBitmap.newCursor()) {
                 cur.toEndToken();
                 cur.beginElement(new QName(MS_DML_NS, "useLocalDpi", "a14"));
                 cur.insertNamespace("a14", MS_DML_NS);
                 cur.insertAttributeWithValue("val", "0");
-            } finally {
-                cur.dispose();
             }
         }
 
@@ -263,14 +260,11 @@ public class XSLFPictureShape extends XSLFSimpleShape
 
         CTOfficeArtExtension svgBitmap = extLst.addNewExt();
         svgBitmap.setUri(SVG_URI);
-        XmlCursor cur = svgBitmap.newCursor();
-        try {
+        try (XmlCursor cur = svgBitmap.newCursor()) {
             cur.toEndToken();
             cur.beginElement(new QName(MS_SVG_NS, "svgBlip", "asvg"));
             cur.insertNamespace("asvg", MS_SVG_NS);
             cur.insertAttributeWithValue(EMBED_TAG, svgRelId);
-        } finally {
-            cur.dispose();
         }
     }
 
@@ -337,14 +331,11 @@ public class XSLFPictureShape extends XSLFSimpleShape
 
         int size = extLst.sizeOfExtArray();
         for (int i = 0; i < size; i++) {
-            XmlCursor cur = extLst.getExtArray(i).newCursor();
-            try {
+            try (XmlCursor cur = extLst.getExtArray(i).newCursor()) {
                 if (cur.toChild(MS_SVG_NS, "svgBlip")) {
                     String svgRelId = cur.getAttributeText(EMBED_TAG);
                     return (svgRelId != null) ? (XSLFPictureData) getSheet().getRelationById(svgRelId) : null;
                 }
-            } finally {
-                cur.dispose();
             }
         }
         return null;
@@ -362,6 +353,10 @@ public class XSLFPictureShape extends XSLFSimpleShape
      */
     public static XSLFPictureShape addSvgImage(XSLFSheet sheet, XSLFPictureData svgPic, PictureType previewType, Rectangle2D anchor) throws IOException {
 
+        if (svgPic == null || svgPic.getType() == null) {
+            throw new IllegalArgumentException("Cannot process svgPic with null type");
+        }
+
         SVGImageRenderer renderer = new SVGImageRenderer();
         try (InputStream is = svgPic.getInputStream()) {
             renderer.loadImage(is, svgPic.getType().contentType);
@@ -377,16 +372,17 @@ public class XSLFPictureShape extends XSLFSimpleShape
         }
 
         BufferedImage thmBI = renderer.getImage(dim);
-        UnsynchronizedByteArrayOutputStream bos = new UnsynchronizedByteArrayOutputStream(100000);
-        // use extension instead of enum name, because of "jpeg"
-        ImageIO.write(thmBI, pt.extension.substring(1), bos);
+        try (UnsynchronizedByteArrayOutputStream bos = new UnsynchronizedByteArrayOutputStream(100000)) {
+            // use extension instead of enum name, because of "jpeg"
+            ImageIO.write(thmBI, pt.extension.substring(1), bos);
 
-        XSLFPictureData pngPic = sheet.getSlideShow().addPicture(bos.toInputStream(), pt);
+            XSLFPictureData pngPic = sheet.getSlideShow().addPicture(bos.toInputStream(), pt);
 
-        XSLFPictureShape shape = sheet.createPicture(pngPic);
-        shape.setAnchor(anc);
-        shape.setSvgImage(svgPic);
-        return shape;
+            XSLFPictureShape shape = sheet.createPicture(pngPic);
+            shape.setAnchor(anc);
+            shape.setSvgImage(svgPic);
+            return shape;
+        }
     }
 
 
@@ -431,13 +427,10 @@ public class XSLFPictureShape extends XSLFSimpleShape
                 String xpath = "declare namespace a14='"+ MS_DML_NS +"' $this//a14:imgProps/a14:imgLayer";
                 XmlObject[] obj = ext.selectPath(xpath);
                 if(obj != null && obj.length == 1) {
-                    XmlCursor c = obj[0].newCursor();
-                    try {
+                    try (XmlCursor c = obj[0].newCursor()) {
                         String id = c.getAttributeText(EMBED_TAG);
                         String newId = getSheet().importBlip(id, p.getSheet());
                         c.setAttributeText(EMBED_TAG, newId);
-                    } finally {
-                        c.dispose();
                     }
                 }
             }

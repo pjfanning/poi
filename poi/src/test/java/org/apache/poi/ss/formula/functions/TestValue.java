@@ -19,11 +19,19 @@ package org.apache.poi.ss.formula.functions;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.apache.poi.hssf.usermodel.HSSFCell;
+import org.apache.poi.hssf.usermodel.HSSFFormulaEvaluator;
+import org.apache.poi.hssf.usermodel.HSSFRow;
+import org.apache.poi.hssf.usermodel.HSSFSheet;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.formula.eval.ErrorEval;
 import org.apache.poi.ss.formula.eval.NumberEval;
 import org.apache.poi.ss.formula.eval.StringEval;
 import org.apache.poi.ss.formula.eval.ValueEval;
+import org.apache.poi.ss.util.Utils;
 import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
 
 /**
  * Tests for {@link Value}
@@ -73,6 +81,8 @@ final class TestValue {
         confirmValue("$1,000e2", 100000);
         confirmValue("30%", 0.3);
         confirmValue("30 %", 0.3);
+        //next test is based on https://support.microsoft.com/en-us/office/value-function-257d0108-07dc-437d-ae1c-bc2d3953d8c2
+        confirmValue("4:48:00", 0.2);
     }
 
     @Test
@@ -93,5 +103,19 @@ final class TestValue {
         confirmValueError(",300");
         confirmValueError("0.233,4");
         confirmValueError("1e2.5");
+        confirmValueError("");
+    }
+
+    @Test
+    void testBlank() throws IOException {
+        try (HSSFWorkbook wb = new HSSFWorkbook()) {
+            HSSFSheet sheet = wb.createSheet();
+            HSSFRow row = sheet.createRow(0);
+            HSSFCell b1 = row.createCell(1);
+            HSSFCell c1 = row.createCell(2);
+            HSSFFormulaEvaluator fe = new HSSFFormulaEvaluator(wb);
+            Utils.assertDouble(fe, b1, "VALUE(A1)", 0.0);
+            Utils.assertDouble(fe, c1, "VALUE(B1)", 0.0);
+        }
     }
 }

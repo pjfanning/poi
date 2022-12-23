@@ -36,6 +36,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -96,7 +97,9 @@ import org.apache.poi.xssf.SXSSFITestDataProvider;
 import org.apache.poi.xssf.XLSBUnsupportedException;
 import org.apache.poi.xssf.XSSFITestDataProvider;
 import org.apache.poi.xssf.XSSFTestDataSamples;
+import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.apache.poi.xssf.model.CalculationChain;
+import org.apache.poi.xssf.model.StylesTable;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.extensions.XSSFCellFill;
 import org.apache.xmlbeans.XmlException;
@@ -1091,7 +1094,7 @@ public final class TestXSSFBugs extends BaseTestBugzillaIssues {
         try (XSSFWorkbook wb = new XSSFWorkbook()) {
             XSSFSheet s = wb.createSheet();
 
-            CellStyle defaultStyle = wb.getCellStyleAt((short) 0);
+            CellStyle defaultStyle = wb.getCellStyleAt(0);
             assertEquals(0, defaultStyle.getIndex());
 
             CellStyle blueStyle = wb.createCellStyle();
@@ -3310,7 +3313,9 @@ public final class TestXSSFBugs extends BaseTestBugzillaIssues {
                 }
             LOG.atInfo().log(between(start, now()));
 
-            assertTrue(between(start, now()).getSeconds() < 25);
+            assertTrue(between(start, now()).getSeconds() < 25,
+                    "Had start: " + start + ", now: " + now() +
+                            ", diff: " + Duration.between(start, now()).getSeconds());
         }
     }
 
@@ -3639,6 +3644,107 @@ public final class TestXSSFBugs extends BaseTestBugzillaIssues {
             assertDouble(fe, cell, "A1+1", DateUtil.getExcelDate(ldt) + 1);
             LocalDateTime expected = ldt.plusMinutes(90);
             assertDouble(fe, cell, "A1+\"1:30\"", DateUtil.getExcelDate(expected));
+        }
+    }
+
+    @Test
+    void testBug51037() throws IOException {
+        try (XSSFWorkbook wb = new XSSFWorkbook()) {
+            XSSFCellStyle blueStyle = wb.createCellStyle();
+            blueStyle.setFillForegroundColor(IndexedColors.AQUA.getIndex());
+            blueStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            XSSFCellStyle pinkStyle = wb.createCellStyle();
+            pinkStyle.setFillForegroundColor(IndexedColors.PINK.getIndex());
+            pinkStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            Sheet s1 = wb.createSheet("Pretty columns");
+
+            s1.setDefaultColumnStyle(4, blueStyle);
+            s1.setDefaultColumnStyle(6, pinkStyle);
+
+            Row r3 = s1.createRow(3);
+            r3.createCell(0).setCellValue("The");
+            r3.createCell(1).setCellValue("quick");
+            r3.createCell(2).setCellValue("brown");
+            r3.createCell(3).setCellValue("fox");
+            r3.createCell(4).setCellValue("jumps");
+            r3.createCell(5).setCellValue("over");
+            r3.createCell(6).setCellValue("the");
+            r3.createCell(7).setCellValue("lazy");
+            r3.createCell(8).setCellValue("dog");
+            Row r7 = s1.createRow(7);
+            r7.createCell(1).setCellStyle(pinkStyle);
+            r7.createCell(8).setCellStyle(blueStyle);
+
+            assertEquals(blueStyle.getIndex(), r3.getCell(4).getCellStyle().getIndex());
+            assertEquals(pinkStyle.getIndex(), r3.getCell(6).getCellStyle().getIndex());
+
+            try (UnsynchronizedByteArrayOutputStream bos = new UnsynchronizedByteArrayOutputStream()) {
+                wb.write(bos);
+                try (XSSFWorkbook wb2 = new XSSFWorkbook(bos.toInputStream())) {
+                    XSSFSheet wb2Sheet = wb2.getSheetAt(0);
+                    XSSFRow wb2R3 = wb2Sheet.getRow(3);
+                    assertEquals(blueStyle.getIndex(), wb2R3.getCell(4).getCellStyle().getIndex());
+                    assertEquals(pinkStyle.getIndex(), wb2R3.getCell(6).getCellStyle().getIndex());
+                }
+            }
+        }
+    }
+
+    @Test
+    void testBug66181() throws IOException {
+        File file = XSSFTestDataSamples.getSampleFile("ValueFunctionOfBlank.xlsx");
+        try (
+                FileInputStream fis = new FileInputStream(file);
+                Workbook workbook = WorkbookFactory.create(fis)
+        ) {
+            Sheet sheet = workbook.getSheetAt(0);
+            Row row = sheet.getRow(0);
+            Cell a1 = row.getCell(0);
+            assertEquals(CellType.FORMULA, a1.getCellType());
+            assertEquals(CellType.ERROR, a1.getCachedFormulaResultType());
+            FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
+            CellValue cv1 = evaluator.evaluate(a1);
+            assertEquals(CellType.ERROR, cv1.getCellType());
+            assertEquals(ErrorEval.VALUE_INVALID.getErrorCode(), cv1.getErrorValue());
+        }
+    }
+
+    @Test
+    void testBug66216() throws IOException {
+        File file = XSSFTestDataSamples.getSampleFile("ExcelPivotTableSample.xlsx");
+        try (
+                FileInputStream fis = new FileInputStream(file);
+                XSSFWorkbook workbook = new XSSFWorkbook(fis)
+        ) {
+            for (XSSFPivotTable pivotTable : workbook.getPivotTables()) {
+                assertNotNull(pivotTable.getCTPivotTableDefinition());
+                assertNotNull(pivotTable.getPivotCacheDefinition());
+                assertEquals(1, pivotTable.getRelations().size());
+                assertInstanceOf(XSSFPivotCacheDefinition.class, pivotTable.getRelations().get(0));
+                assertEquals("rId1", pivotTable.getPivotCacheDefinition().getCTPivotCacheDefinition().getId());
+                assertEquals(3,
+                        pivotTable.getPivotCacheDefinition().getCTPivotCacheDefinition().getRecordCount());
+            }
+        }
+    }
+
+    @Test
+    void testTika3163() throws Exception {
+        File file = XSSFTestDataSamples.getSampleFile("CVLKRA-KYC_Download_File_Structure_V3.1.xlsx");
+        try (
+                FileInputStream fis = new FileInputStream(file);
+                XSSFWorkbook workbook = new XSSFWorkbook(fis)
+        ) {
+            assertNotNull(workbook.getStylesSource());
+            assertEquals(23, workbook.getStylesSource().getFonts().size());
+        }
+        try (OPCPackage pkg = OPCPackage.open(file, PackageAccess.READ)) {
+            XSSFReader reader = new XSSFReader(pkg);
+            StylesTable stylesTable = reader.getStylesTable();
+            assertNotNull(stylesTable);
+            assertEquals(23, stylesTable.getFonts().size());
         }
     }
 }

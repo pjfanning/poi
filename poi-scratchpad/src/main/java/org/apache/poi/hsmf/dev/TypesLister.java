@@ -19,9 +19,9 @@ package org.apache.poi.hsmf.dev;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Comparator;
 
 import org.apache.poi.hsmf.datatypes.MAPIProperty;
+import org.apache.poi.util.StringUtil;
 
 /**
  * Lists the different MAPI types
@@ -31,26 +31,21 @@ public class TypesLister {
    
    public void listByName(PrintStream out) {
       ArrayList<MAPIProperty> all = new ArrayList<>(MAPIProperty.getAll());
-      all.sort(new Comparator<MAPIProperty>() {
-          public int compare(MAPIProperty a, MAPIProperty b) {
-              return a.name.compareTo(b.name);
-          }
-      });
+      all.sort((a, b) -> a.name.compareTo(b.name));
       list(all, out);
    }
    public void listById(PrintStream out) {
       ArrayList<MAPIProperty> all = new ArrayList<>(MAPIProperty.getAll());
-      all.sort(new Comparator<MAPIProperty>() {
-          public int compare(MAPIProperty a, MAPIProperty b) {
-              return Integer.compare(a.id, b.id);
-          }
-      });
+      all.sort((a, b) -> Integer.compare(a.id, b.id));
       list(all, out);
    }
    private void list(ArrayList<MAPIProperty> list, PrintStream out) {
       for(MAPIProperty attr : list) {
-         String id = Integer.toHexString(attr.id);
-         while(id.length() < 4) { id = "0"+id; }
+         StringBuilder id = new StringBuilder(Integer.toHexString(attr.id));
+         int need0count = 4 - id.length();
+         if (need0count > 0) {
+            id.insert(0, StringUtil.repeat('0', need0count));
+         }
          
          int typeId = attr.usualType.getId();
          String typeIdStr = Integer.toString(typeId);

@@ -74,7 +74,8 @@ public final class SharedValueManager {
                 }
             }
             if (_numberOfFormulas >= _frAggs.length) {
-                throw new RuntimeException("Too many formula records for shared formula group");
+                throw new IllegalStateException("Too many formula records for shared formula group: " + _numberOfFormulas +
+						", expecting less than " + _frAggs.length);
             }
             _frAggs[_numberOfFormulas++] = agg;
         }
@@ -153,7 +154,7 @@ public final class SharedValueManager {
     public SharedFormulaRecord linkSharedFormulaRecord(CellReference firstCell, FormulaRecordAggregate agg) {
         SharedFormulaGroup result = findFormulaGroupForCell(firstCell);
         if(null == result) {
-            throw new RuntimeException("Failed to find a matching shared formula record");
+            throw new IllegalArgumentException("Failed to find a matching shared formula record for cell: " + firstCell);
         }
         result.add(agg);
         return result.getSFR();
@@ -184,7 +185,7 @@ public final class SharedValueManager {
      *
      * @return the SHRFMLA, TABLE or ARRAY record for the formula cell, if it is the first cell of
      * a table or array region. {@code null} if the formula cell is not shared/array/table,
-     * or if the specified formula is not the the first in the group.
+     * or if the specified formula is not the first in the group.
      */
     public SharedValueRecordBase getRecordForFirstCell(FormulaRecordAggregate agg) {
         CellReference firstCell = agg.getFormulaRecord().getFormula().getExpReference();

@@ -90,6 +90,8 @@ public final class AnalysisToolPak implements UDFFinder {
         r(m, "COUPNCD", null);
         r(m, "COUPNUM", null);
         r(m, "COUPPCD", null);
+        r(m, "COVARIANCE.P", Covar.instanceP);
+        r(m, "COVARIANCE.S", Covar.instanceS);
         r(m, "CUBEKPIMEMBER", null);
         r(m, "CUBEMEMBER", null);
         r(m, "CUBEMEMBERPROPERTY", null);
@@ -116,6 +118,7 @@ public final class AnalysisToolPak implements UDFFinder {
         r(m, "FACTDOUBLE", FactDouble.instance);
         r(m, "FLOOR.MATH", FloorMath.instance);
         r(m, "FLOOR.PRECISE", FloorPrecise.instance);
+        r(m, "FORECAST.LINEAR", Forecast.instance);
         r(m, "FVSCHEDULE", null);
         r(m, "GCD", Gcd.instance);
         r(m, "GESTEP", null);

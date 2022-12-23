@@ -17,17 +17,14 @@
 package org.apache.poi.ss.formula.functions;
 
 import org.apache.commons.math4.stat.correlation.PearsonsCorrelation;
-import org.apache.poi.ss.formula.ThreeDEval;
-import org.apache.poi.ss.formula.TwoDEval;
-import org.apache.poi.ss.formula.eval.BlankEval;
 import org.apache.poi.ss.formula.eval.ErrorEval;
 import org.apache.poi.ss.formula.eval.EvaluationException;
 import org.apache.poi.ss.formula.eval.NumberEval;
-import org.apache.poi.ss.formula.eval.NumericValueEval;
-import org.apache.poi.ss.formula.eval.OperandResolver;
-import org.apache.poi.ss.formula.eval.RefEval;
-import org.apache.poi.ss.formula.eval.StringValueEval;
 import org.apache.poi.ss.formula.eval.ValueEval;
+
+import java.util.List;
+
+import static org.apache.poi.ss.formula.functions.ArrayFunctionUtils.getNumberArrays;
 
 /**
  * Implementation for Excel CORREL() function.
@@ -47,89 +44,20 @@ public class Correl extends Fixed2ArgFunction {
 
     public static final Correl instance = new Correl();
 
+    private Correl() {}
+
     @Override
     public ValueEval evaluate(int srcRowIndex, int srcColumnIndex, ValueEval arg0, ValueEval arg1) {
         try {
+            final List<DoubleList> arrays = getNumberArrays(arg0, arg1);
             final PearsonsCorrelation pc = new PearsonsCorrelation();
             final double correl = pc.correlation(
-                    getNumberArray(arg0), getNumberArray(arg1));
+                    arrays.get(0).toArray(), arrays.get(1).toArray());
             return new NumberEval(correl);
         } catch (EvaluationException e) {
             return e.getErrorEval();
+        } catch (Exception e) {
+            return ErrorEval.NA;
         }
     }
-
-    private double[] getNumberArray(ValueEval operand) throws EvaluationException {
-        DoubleList retval = new DoubleList();
-        collectValues(operand, retval);
-        return retval.toArray();
-    }
-
-    private void collectValues(ValueEval operand, DoubleList temp) throws EvaluationException {
-        if (operand instanceof ThreeDEval) {
-            ThreeDEval ae = (ThreeDEval) operand;
-            for (int sIx = ae.getFirstSheetIndex(); sIx <= ae.getLastSheetIndex(); sIx++) {
-                int width = ae.getWidth();
-                int height = ae.getHeight();
-                for (int rrIx = 0; rrIx < height; rrIx++) {
-                    for (int rcIx = 0; rcIx < width; rcIx++) {
-                        ValueEval ve = ae.getValue(sIx, rrIx, rcIx);
-                        collectValue(ve, temp);
-                    }
-                }
-            }
-            return;
-        }
-        if (operand instanceof TwoDEval) {
-            TwoDEval ae = (TwoDEval) operand;
-            int width = ae.getWidth();
-            int height = ae.getHeight();
-            for (int rrIx = 0; rrIx < height; rrIx++) {
-                for (int rcIx = 0; rcIx < width; rcIx++) {
-                    ValueEval ve = ae.getValue(rrIx, rcIx);
-                    collectValue(ve, temp);
-                }
-            }
-            return;
-        }
-        if (operand instanceof RefEval) {
-            RefEval re = (RefEval) operand;
-            for (int sIx = re.getFirstSheetIndex(); sIx <= re.getLastSheetIndex(); sIx++) {
-                collectValue(re.getInnerValueEval(sIx), temp);
-            }
-            return;
-        }
-        collectValue(operand, temp);
-    }
-
-    private void collectValue(ValueEval ve, DoubleList temp) throws EvaluationException {
-        if (ve == null) {
-            throw new IllegalArgumentException("ve must not be null");
-        }
-        if (ve instanceof NumericValueEval) {
-            NumericValueEval ne = (NumericValueEval) ve;
-            temp.add(ne.getNumberValue());
-            return;
-        }
-        if (ve instanceof StringValueEval) {
-            String s = ((StringValueEval) ve).getStringValue().trim();
-            Double d = OperandResolver.parseDouble(s);
-            if (d == null) {
-                throw new EvaluationException(ErrorEval.VALUE_INVALID);
-            } else {
-                temp.add(d.doubleValue());
-            }
-            return;
-        }
-        if (ve instanceof ErrorEval) {
-            throw new EvaluationException((ErrorEval) ve);
-        }
-        if (ve == BlankEval.instance) {
-            temp.add(0.0);
-            return;
-        }
-        throw new RuntimeException("Invalid ValueEval type passed for conversion: ("
-                + ve.getClass() + ")");
-    }
-
 }

@@ -21,6 +21,8 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.poi.util.StringUtil;
+
 /**
  * The types list and details are available from
  * http://msdn.microsoft.com/en-us/library/microsoft.exchange.data.contenttypes.tnef.tnefpropertytype%28v=EXCHG.140%29.aspx
@@ -79,6 +81,20 @@ public final class Types {
     /** A string, from Outlook 3.0 onwards. Normally unicode */
     public static final MAPIType UNICODE_STRING = new MAPIType(0x001F, "Unicode String", -1);
 
+    /** MultiValued Properties */
+    public static final MAPIType MV_SHORT = new MAPIType(0x1002, "MV Short", -1);
+    public static final MAPIType MV_LONG = new MAPIType(0x1003, "MV Long", -1);
+    public static final MAPIType MV_FLOAT = new MAPIType(0x1004, "MV Float", -1);
+    public static final MAPIType MV_DOUBLE = new MAPIType(0x1005, "MV Double", -1);
+    public static final MAPIType MV_CURRENCY = new MAPIType(0x1006, "MV Currency", -1);
+    public static final MAPIType MV_APP_TIME = new MAPIType(0x1007, "MV Application Time", -1);
+    public static final MAPIType MV_LONG_LONG = new MAPIType(0x1014, "MV Long Long", -1);
+    public static final MAPIType MV_TIME = new MAPIType(0x1040, "MV Time", -1);
+    public static final MAPIType MV_CLS_ID = new MAPIType(0x1048, "MV CLS ID GUID", -1);
+    public static final MAPIType MV_BINARY = new MAPIType(0x1102, "MV Binary", -1);
+    public static final MAPIType MV_ASCII_STRING = new MAPIType(0x101E, "MV ASCII String", -1);
+    public static final MAPIType MV_UNICODE_STRING = new MAPIType(0x101F, "MV Unicode String", -1);
+
     /** MultiValued - Value part contains multiple values */
     public static final int MULTIVALUED_FLAG = 0x1000;
 
@@ -122,6 +138,14 @@ public final class Types {
             return ((length != -1) && (length <= 8)) || (id == Types.CLS_ID.id);
         }
 
+        /**
+         * @return whether the type is a pointer
+         * @since POI 5.2.4
+         */
+        public boolean isPointer() {
+            return (length == -1) || (length > 8);
+        }
+
         public int getId() {
             return id;
         }
@@ -148,11 +172,12 @@ public final class Types {
     }
 
     public static String asFileEnding(int type) {
-        String str = Integer.toHexString(type).toUpperCase(Locale.ROOT);
-        while (str.length() < 4) {
-            str = "0" + str;
+        StringBuilder str = new StringBuilder(Integer.toHexString(type).toUpperCase(Locale.ROOT));
+        int need0count = 4 - str.length();
+        if (need0count > 0) {
+            str.insert(0, StringUtil.repeat('0', need0count));
         }
-        return str;
+        return str.toString();
     }
 
     public static String asName(int typeId) {

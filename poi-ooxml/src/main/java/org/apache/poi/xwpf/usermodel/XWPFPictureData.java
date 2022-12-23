@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 
+import org.apache.poi.common.usermodel.PictureType;
 import org.apache.poi.ooxml.POIXMLDocumentPart;
 import org.apache.poi.ooxml.POIXMLException;
 import org.apache.poi.ooxml.POIXMLRelation;
@@ -38,7 +39,7 @@ public class XWPFPictureData extends POIXMLDocumentPart {
     private static int MAX_IMAGE_SIZE = DEFAULT_MAX_IMAGE_SIZE;
 
     /**
-     * @param length the max image size allowed for XSSF pictures
+     * @param length the max image size allowed for XWPF pictures
      */
     public static void setMaxImageSize(int length) {
         MAX_IMAGE_SIZE = length;
@@ -57,18 +58,19 @@ public class XWPFPictureData extends POIXMLDocumentPart {
     protected static final POIXMLRelation[] RELATIONS;
 
     static {
-        RELATIONS = new POIXMLRelation[13];
-        RELATIONS[Document.PICTURE_TYPE_EMF] = XWPFRelation.IMAGE_EMF;
-        RELATIONS[Document.PICTURE_TYPE_WMF] = XWPFRelation.IMAGE_WMF;
-        RELATIONS[Document.PICTURE_TYPE_PICT] = XWPFRelation.IMAGE_PICT;
-        RELATIONS[Document.PICTURE_TYPE_JPEG] = XWPFRelation.IMAGE_JPEG;
-        RELATIONS[Document.PICTURE_TYPE_PNG] = XWPFRelation.IMAGE_PNG;
-        RELATIONS[Document.PICTURE_TYPE_DIB] = XWPFRelation.IMAGE_DIB;
-        RELATIONS[Document.PICTURE_TYPE_GIF] = XWPFRelation.IMAGE_GIF;
-        RELATIONS[Document.PICTURE_TYPE_TIFF] = XWPFRelation.IMAGE_TIFF;
-        RELATIONS[Document.PICTURE_TYPE_EPS] = XWPFRelation.IMAGE_EPS;
-        RELATIONS[Document.PICTURE_TYPE_BMP] = XWPFRelation.IMAGE_BMP;
-        RELATIONS[Document.PICTURE_TYPE_WPG] = XWPFRelation.IMAGE_WPG;
+        RELATIONS = new POIXMLRelation[14];
+        RELATIONS[PictureType.EMF.ooxmlId] = XWPFRelation.IMAGE_EMF;
+        RELATIONS[PictureType.WMF.ooxmlId] = XWPFRelation.IMAGE_WMF;
+        RELATIONS[PictureType.PICT.ooxmlId] = XWPFRelation.IMAGE_PICT;
+        RELATIONS[PictureType.JPEG.ooxmlId] = XWPFRelation.IMAGE_JPEG;
+        RELATIONS[PictureType.PNG.ooxmlId] = XWPFRelation.IMAGE_PNG;
+        RELATIONS[PictureType.DIB.ooxmlId] = XWPFRelation.IMAGE_DIB;
+        RELATIONS[PictureType.GIF.ooxmlId] = XWPFRelation.IMAGE_GIF;
+        RELATIONS[PictureType.TIFF.ooxmlId] = XWPFRelation.IMAGE_TIFF;
+        RELATIONS[PictureType.EPS.ooxmlId] = XWPFRelation.IMAGE_EPS;
+        RELATIONS[PictureType.BMP.ooxmlId] = XWPFRelation.IMAGE_BMP;
+        RELATIONS[PictureType.WPG.ooxmlId] = XWPFRelation.IMAGE_WPG;
+        RELATIONS[PictureType.WDP.ooxmlId] = XWPFRelation.HDPHOTO_WDP;
     }
 
     private Long checksum;
@@ -145,7 +147,9 @@ public class XWPFPictureData extends POIXMLDocumentPart {
      * @see org.apache.poi.xwpf.usermodel.Document#PICTURE_TYPE_PICT
      * @see org.apache.poi.xwpf.usermodel.Document#PICTURE_TYPE_JPEG
      * @see org.apache.poi.xwpf.usermodel.Document#PICTURE_TYPE_PNG
+     * @see org.apache.poi.xwpf.usermodel.Document#PICTURE_TYPE_GIF
      * @see org.apache.poi.xwpf.usermodel.Document#PICTURE_TYPE_DIB
+     * @see #getPictureTypeEnum()
      */
     public int getPictureType() {
         String contentType = getPackagePart().getContentType();
@@ -159,6 +163,16 @@ public class XWPFPictureData extends POIXMLDocumentPart {
             }
         }
         return 0;
+    }
+
+    /**
+     * Return a {@link PictureType} that specifies type of this picture
+     *
+     * @return a {@link PictureType}, returns null if an unknown type
+     * @since POI 5.2.3
+     */
+    public PictureType getPictureTypeEnum() {
+        return PictureType.findByOoxmlId(getPictureType());
     }
 
     public Long getChecksum() {

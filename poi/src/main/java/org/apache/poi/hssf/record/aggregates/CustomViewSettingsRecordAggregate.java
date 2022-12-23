@@ -73,8 +73,7 @@ public final class CustomViewSettingsRecordAggregate extends RecordAggregate {
             return;
         }
         rv.visitRecord(_begin);
-        for (int i = 0; i < _recs.size(); i++) {
-            RecordBase rb = _recs.get(i);
+        for (RecordBase rb : _recs) {
             if (rb instanceof RecordAggregate) {
                 ((RecordAggregate) rb).visitContainedRecords(rv);
             } else {

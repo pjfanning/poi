@@ -64,6 +64,7 @@ sun.font.FontManagerFactory.getInstance
 sun.font.TrueTypeFont.open
 sun.reflect.misc.MethodUtil.<clinit>
 java.util.logging.Logger.findSystemResourceBundle
+java.util.logging.LogManager.readPrimordialConfiguration
 java.text.BreakIterator.getBundle
 sun.java2d.SunGraphicsEnvironment.<init>
 org.kohsuke.file_leak_detector.AgentMain.runHttpServer
@@ -72,6 +73,8 @@ org.apache.logging.log4j.core.config.ConfigurationSource.getConfigurationSource
 sun.launcher.LauncherHelper.validateMainClass
 sun.util.locale.provider.RuleBasedBreakIterator$1.run
 java.util.ServiceLoader$LazyIterator.hasNextService
+java.util.ServiceLoader$LazyClassPathLookupIterator.nextProviderClass
+java.lang.ClassLoader.loadClass
 
 # other third party libs
 net.bytebuddy.dynamic.ClassFileLocator$ForClassLoader.locate

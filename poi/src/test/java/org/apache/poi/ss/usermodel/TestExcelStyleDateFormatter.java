@@ -28,13 +28,11 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.poi.POITestCase;
 import org.apache.poi.util.LocaleUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -44,8 +42,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 class TestExcelStyleDateFormatter {
     private static final String EXCEL_DATE_FORMAT = "MMMMM";
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT);
-    private static final int jreVersion =
-        Integer.parseInt(System.getProperty("java.version").replaceAll("^(?:1\\.)?(\\d+).*", "$1"));
+    private static final int jreVersion = POITestCase.getJDKVersion();
     private static final String provider = System.getProperty("java.locale.providers");
     private static final FieldPosition fp = new FieldPosition(java.text.DateFormat.MONTH_FIELD);
     private static final ExcelStyleDateFormatter formatter = new ExcelStyleDateFormatter(EXCEL_DATE_FORMAT);

@@ -47,7 +47,6 @@ import org.apache.poi.poifs.filesystem.DirectoryNode;
 import org.apache.poi.poifs.filesystem.POIFSWriterEvent;
 import org.apache.poi.poifs.filesystem.POIFSWriterListener;
 import org.apache.poi.util.IOUtils;
-import org.apache.poi.util.LittleEndianByteArrayOutputStream;
 import org.apache.poi.util.LittleEndianConsts;
 import org.apache.poi.util.LittleEndianOutputStream;
 import org.apache.poi.util.RandomSingleton;
@@ -221,15 +220,12 @@ public class StandardEncryptor extends Encryptor {
         final StandardEncryptionHeader header = (StandardEncryptionHeader)info.getHeader();
         final StandardEncryptionVerifier verifier = (StandardEncryptionVerifier)info.getVerifier();
 
-        EncryptionRecord er = new EncryptionRecord(){
-            @Override
-            public void write(LittleEndianByteArrayOutputStream bos) {
-                bos.writeShort(info.getVersionMajor());
-                bos.writeShort(info.getVersionMinor());
-                bos.writeInt(info.getEncryptionFlags());
-                header.write(bos);
-                verifier.write(bos);
-            }
+        EncryptionRecord er = bos -> {
+            bos.writeShort(info.getVersionMajor());
+            bos.writeShort(info.getVersionMinor());
+            bos.writeInt(info.getEncryptionFlags());
+            header.write(bos);
+            verifier.write(bos);
         };
 
         createEncryptionEntry(dir, "EncryptionInfo", er);

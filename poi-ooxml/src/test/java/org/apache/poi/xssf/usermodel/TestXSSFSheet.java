@@ -18,7 +18,6 @@
 package org.apache.poi.xssf.usermodel;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.apache.poi.xssf.XSSFTestDataSamples.openSamplePackage;
 import static org.apache.poi.xssf.XSSFTestDataSamples.openSampleWorkbook;
 import static org.apache.poi.xssf.XSSFTestDataSamples.writeOutAndReadBack;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -53,31 +52,17 @@ import org.apache.poi.ooxml.POIXMLException;
 import org.apache.poi.poifs.crypt.CryptoFunctions;
 import org.apache.poi.poifs.crypt.HashAlgorithm;
 import org.apache.poi.ss.tests.usermodel.BaseTestXSheet;
-import org.apache.poi.ss.usermodel.AutoFilter;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellCopyPolicy;
-import org.apache.poi.ss.usermodel.CellType;
-import org.apache.poi.ss.usermodel.ClientAnchor;
-import org.apache.poi.ss.usermodel.Comment;
-import org.apache.poi.ss.usermodel.CreationHelper;
-import org.apache.poi.ss.usermodel.Drawing;
-import org.apache.poi.ss.usermodel.FormulaError;
-import org.apache.poi.ss.usermodel.IgnoredErrorType;
-import org.apache.poi.ss.usermodel.IndexedColors;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.AreaReference;
 import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.ss.util.CellUtil;
+import org.apache.poi.ss.util.PaneInformation;
 import org.apache.poi.util.LocaleUtil;
 import org.apache.poi.xssf.XSSFITestDataProvider;
 import org.apache.poi.xssf.XSSFTestDataSamples;
 import org.apache.poi.xssf.model.CalculationChain;
-import org.apache.poi.xssf.model.Comments;
 import org.apache.poi.xssf.model.CommentsTable;
 import org.apache.poi.xssf.model.StylesTable;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
@@ -106,12 +91,6 @@ import org.openxmlformats.schemas.spreadsheetml.x2006.main.STUnsignedShortHex;
 public final class TestXSSFSheet extends BaseTestXSheet {
     public TestXSSFSheet() {
         super(XSSFITestDataProvider.instance);
-    }
-
-    //TODO column styles are not yet supported by XSSF
-    @Override
-    protected void defaultColumnStyle() {
-        //super.defaultColumnStyle();
     }
 
     @Test
@@ -293,7 +272,7 @@ public final class TestXSSFSheet extends BaseTestXSheet {
     }
 
     @Test
-    void createFreezePane_XSSF() throws IOException {
+    void createFreezePane_XSSF_withBug66173() throws IOException {
         try (XSSFWorkbook workbook = new XSSFWorkbook()) {
             XSSFSheet sheet = workbook.createSheet();
             CTWorksheet ctWorksheet = sheet.getCTWorksheet();
@@ -305,9 +284,39 @@ public final class TestXSSFSheet extends BaseTestXSheet {
             assertEquals(3.0, ctWorksheet.getSheetViews().getSheetViewArray(0).getPane().getXSplit(), 0.0);
             //    assertEquals(10, sheet.getTopRow());
             //    assertEquals(10, sheet.getLeftCol());
-            sheet.createSplitPane(4, 8, 12, 12, 1);
+            //need to add 1 to pane type due to https://bz.apache.org/bugzilla/show_bug.cgi?id=66173
+            sheet.createSplitPane(4, 8, 12, 12, PaneInformation.PANE_LOWER_RIGHT + 1);
             assertEquals(8.0, ctWorksheet.getSheetViews().getSheetViewArray(0).getPane().getYSplit(), 0.0);
             assertSame(STPane.BOTTOM_RIGHT, ctWorksheet.getSheetViews().getSheetViewArray(0).getPane().getActivePane());
+        }
+    }
+
+    @Test
+    void createFreezePane_XSSF() throws IOException {
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            XSSFSheet sheet = workbook.createSheet();
+            CTWorksheet ctWorksheet = sheet.getCTWorksheet();
+
+            sheet.createFreezePane(2, 4);
+            assertEquals(2.0, ctWorksheet.getSheetViews().getSheetViewArray(0).getPane().getXSplit(), 0.0);
+            assertSame(STPane.BOTTOM_RIGHT, ctWorksheet.getSheetViews().getSheetViewArray(0).getPane().getActivePane());
+            assertSame(PaneType.LOWER_RIGHT, sheet.getPaneInformation().getActivePaneType());
+
+            sheet.createFreezePane(3, 6, 10, 10);
+            assertEquals(3.0, ctWorksheet.getSheetViews().getSheetViewArray(0).getPane().getXSplit(), 0.0);
+            //    assertEquals(10, sheet.getTopRow());
+            //    assertEquals(10, sheet.getLeftCol());
+            sheet.createSplitPane(4, 8, 12, 12, PaneType.LOWER_RIGHT);
+            assertEquals(8.0, ctWorksheet.getSheetViews().getSheetViewArray(0).getPane().getYSplit(), 0.0);
+            assertSame(STPane.BOTTOM_RIGHT, ctWorksheet.getSheetViews().getSheetViewArray(0).getPane().getActivePane());
+        }
+    }
+
+    @Test
+    void defaultActivePaneType() throws IOException {
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            XSSFSheet sheet = workbook.createSheet();
+            assertNull(sheet.getPaneInformation());
         }
     }
 

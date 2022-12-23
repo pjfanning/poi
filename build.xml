@@ -42,7 +42,7 @@ under the License.
 
     <description>The Apache POI project Ant build.</description>
 
-    <property name="version.id" value="5.2.3-SNAPSHOT"/>
+    <property name="version.id" value="5.2.4-SNAPSHOT"/>
     <property name="release.rc" value=""/>
 
     <property environment="env"/>
@@ -268,87 +268,88 @@ under the License.
     <dependency prefix="main.commons-math3" artifact="org.apache.commons:commons-math3:3.6.1" usage="main"/>
     <dependency prefix="main.commons-io" artifact="commons-io:commons-io:2.11.0" usage="main"/>
     <dependency prefix="main.com.zaxxer" artifact="com.zaxxer:SparseBitSet:1.2" usage="main"/>
-    <dependency prefix="main.log4j-api" artifact="org.apache.logging.log4j:log4j-api:2.17.2" usage="main"/>
+    <dependency prefix="main.log4j-api" artifact="org.apache.logging.log4j:log4j-api:2.19.0" usage="main"/>
 
-    <dependency prefix="main.junit-api" artifact="org.junit.jupiter:junit-jupiter-api:5.8.2" usage="main-tests"/>
-    <dependency prefix="main.junit-jengine" artifact="org.junit.jupiter:junit-jupiter-engine:5.8.2" usage="main-tests"/>
-    <dependency prefix="main.junit-params" artifact="org.junit.jupiter:junit-jupiter-params:5.8.2" usage="main-tests"/>
+    <dependency prefix="main.junit-api" artifact="org.junit.jupiter:junit-jupiter-api:5.9.1" usage="main-tests"/>
+    <dependency prefix="main.junit-jengine" artifact="org.junit.jupiter:junit-jupiter-engine:5.9.1" usage="main-tests"/>
+    <dependency prefix="main.junit-params" artifact="org.junit.jupiter:junit-jupiter-params:5.9.1" usage="main-tests"/>
     <dependency prefix="main.junit-opentest4j" artifact="org.opentest4j:opentest4j:1.2.0" usage="main-tests"/>
     <dependency prefix="main.junit-apiguardian" artifact="org.apiguardian:apiguardian-api:1.1.0" usage="main-tests"/>
-    <dependency prefix="main.junit-pcommons" artifact="org.junit.platform:junit-platform-commons:1.8.1" usage="main-tests"/>
-    <dependency prefix="main.junit-pengine" artifact="org.junit.platform:junit-platform-engine:1.8.1" usage="main-tests"/>
-    <dependency prefix="main.junit-plauncher" artifact="org.junit.platform:junit-platform-launcher:1.8.1" usage="main-tests"/>
+    <dependency prefix="main.junit-pcommons" artifact="org.junit.platform:junit-platform-commons:1.9.1" usage="main-tests"/>
+    <dependency prefix="main.junit-pengine" artifact="org.junit.platform:junit-platform-engine:1.9.1" usage="main-tests"/>
+    <dependency prefix="main.junit-plauncher" artifact="org.junit.platform:junit-platform-launcher:1.9.1" usage="main-tests"/>
 
 
     <dependency prefix="main.jmh" artifact="org.openjdk.jmh:jmh-core:1.35" usage="main-tests"/>
     <dependency prefix="main.jmhAnnotation" artifact="org.openjdk.jmh:jmh-generator-annprocess:1.35" usage="main-tests"/>
     <dependency prefix="main.hamcrest" artifact="org.hamcrest:hamcrest:2.2" usage="main-tests"/>
     <dependency prefix="main.xmlunit" artifact="org.xmlunit:xmlunit-core:2.9.0" usage="main-tests"/>
-    <dependency prefix="main.mockito" artifact="org.mockito:mockito-core:4.6.1" usage="main-tests"/>
-    <dependency prefix="main.byte-buddy" artifact="net.bytebuddy:byte-buddy:1.12.3" usage="main-tests"/>
-    <dependency prefix="main.byte-buddy-agent" artifact="net.bytebuddy:byte-buddy-agent:1.12.3" usage="main-tests"/>
+    <dependency prefix="main.mockito" artifact="org.mockito:mockito-core:4.10.0" usage="main-tests"/>
+    <dependency prefix="main.byte-buddy" artifact="net.bytebuddy:byte-buddy:1.12.20" usage="main-tests"/>
+    <dependency prefix="main.byte-buddy-agent" artifact="net.bytebuddy:byte-buddy-agent:1.12.20" usage="main-tests"/>
     <dependency prefix="main.objenesis" artifact="org.objenesis:objenesis:3.1" usage="main-tests"/>
-    <dependency prefix="main.log4j-core" artifact="org.apache.logging.log4j:log4j-core:2.17.2" usage="main-tests"/>
+    <dependency prefix="main.log4j-core" artifact="org.apache.logging.log4j:log4j-core:2.19.0" usage="main-tests"/>
     <dependency prefix="main.commons-logging" artifact="commons-logging:commons-logging:1.2" usage="main-tests"/>
 
     <dependency prefix="main.ant" artifact="org.apache.ant:ant:1.10.9" usage="excelant"/>
     <dependency prefix="main.antlauncher" artifact="org.apache.ant:ant-launcher:1.10.9" usage="excelant"/>
 
     <!-- xml signature libs - not part of the distribution -->
-    <dependency prefix="dsig.xmlsec" artifact="org.apache.santuario:xmlsec:3.0.0" usage="ooxml-provided"/>
+    <dependency prefix="dsig.xmlsec" artifact="org.apache.santuario:xmlsec:3.0.1" usage="ooxml-provided"/>
     <dependency prefix="dsig.bouncycastle-prov" artifact="org.bouncycastle:bcprov-jdk15on:1.70" usage="ooxml-provided"/>
     <dependency prefix="dsig.bouncycastle-pkix" artifact="org.bouncycastle:bcpkix-jdk15on:1.70" usage="ooxml-provided"/>
     <dependency prefix="dsig.bouncycastle-util" artifact="org.bouncycastle:bcutil-jdk15on:1.70" usage="ooxml-provided"/>
     <!-- only used for signing the release - not used with the ooxml signatures -->
     <dependency prefix="dsig.bouncycastle-bcpg" artifact="org.bouncycastle:bcpg-jdk15on:1.70" usage="util"/>
+    <dependency prefix="ooxml.test.stax2" artifact="org.codehaus.woodstox:stax2-api:4.2.1" usage="ooxml-provided"/>
 
     <!-- svg/batik/pdf libs - not part of the distribution - move batik to its own directory because of JPMS module-path issues -->
     <dependency prefix="svg.xml-apis-ext" artifact="xml-apis:xml-apis-ext:1.3.04" usage="ooxml-batik"/>
-    <dependency prefix="svg.xmlgraphics-commons" artifact="org.apache.xmlgraphics:xmlgraphics-commons:2.4" usage="ooxml-batik"/>
-    <dependency prefix="svg.batik-anim" artifact="org.apache.xmlgraphics:batik-anim:1.14" usage="ooxml-batik"/>
-    <dependency prefix="svg.batik-awt-util" artifact="org.apache.xmlgraphics:batik-awt-util:1.14" usage="ooxml-batik"/>
-    <dependency prefix="svg.batik-bridge" artifact="org.apache.xmlgraphics:batik-bridge:1.14" usage="ooxml-batik"/>
-    <dependency prefix="svg.batik-codec" artifact="org.apache.xmlgraphics:batik-codec:1.14" usage="ooxml-batik"/>
-    <dependency prefix="svg.batik-constants" artifact="org.apache.xmlgraphics:batik-constants:1.14" usage="ooxml-batik"/>
-    <dependency prefix="svg.batik-css" artifact="org.apache.xmlgraphics:batik-css:1.14" usage="ooxml-batik"/>
-    <dependency prefix="svg.batik-dom" artifact="org.apache.xmlgraphics:batik-dom:1.14" usage="ooxml-batik"/>
-    <dependency prefix="svg.batik-ext" artifact="org.apache.xmlgraphics:batik-ext:1.14" usage="ooxml-batik"/>
-    <dependency prefix="svg.batik-gvt" artifact="org.apache.xmlgraphics:batik-gvt:1.14" usage="ooxml-batik"/>
-    <dependency prefix="svg.batik-i18n" artifact="org.apache.xmlgraphics:batik-i18n:1.14" usage="ooxml-batik"/>
-    <dependency prefix="svg.batik-parser" artifact="org.apache.xmlgraphics:batik-parser:1.14" usage="ooxml-batik"/>
-    <dependency prefix="svg.batik-script" artifact="org.apache.xmlgraphics:batik-script:1.14" usage="ooxml-batik"/>
-    <dependency prefix="svg.batik-shared-resources" artifact="org.apache.xmlgraphics:batik-shared-resources:1.14" usage="ooxml-batik"/>
-    <dependency prefix="svg.batik-svg-dom" artifact="org.apache.xmlgraphics:batik-svg-dom:1.14" usage="ooxml-batik"/>
-    <dependency prefix="svg.batik-svggen" artifact="org.apache.xmlgraphics:batik-svggen:1.14" usage="ooxml-batik"/>
-    <dependency prefix="svg.batik-svgrasterizer" artifact="org.apache.xmlgraphics:batik-svgrasterizer:1.14" usage="ooxml-batik"/>
-    <dependency prefix="svg.batik-transcoder" artifact="org.apache.xmlgraphics:batik-transcoder:1.14" usage="ooxml-batik"/>
-    <dependency prefix="svg.batik-util" artifact="org.apache.xmlgraphics:batik-util:1.14" usage="ooxml-batik"/>
-    <dependency prefix="svg.batik-xml" artifact="org.apache.xmlgraphics:batik-xml:1.14" usage="ooxml-batik"/>
-    <dependency prefix="pdf.pdfbox" artifact="org.apache.pdfbox:pdfbox:2.0.26" usage="ooxml-provided"/>
-    <dependency prefix="pdf.fontbox" artifact="org.apache.pdfbox:fontbox:2.0.26" usage="ooxml-provided"/>
-    <dependency prefix="pdf.graphics2d" artifact="de.rototor.pdfbox:graphics2d:0.38" usage="ooxml-provided"/>
+    <dependency prefix="svg.xmlgraphics-commons" artifact="org.apache.xmlgraphics:xmlgraphics-commons:2.7" usage="ooxml-batik"/>
+    <dependency prefix="svg.batik-anim" artifact="org.apache.xmlgraphics:batik-anim:1.16" usage="ooxml-batik"/>
+    <dependency prefix="svg.batik-awt-util" artifact="org.apache.xmlgraphics:batik-awt-util:1.16" usage="ooxml-batik"/>
+    <dependency prefix="svg.batik-bridge" artifact="org.apache.xmlgraphics:batik-bridge:1.16" usage="ooxml-batik"/>
+    <dependency prefix="svg.batik-codec" artifact="org.apache.xmlgraphics:batik-codec:1.16" usage="ooxml-batik"/>
+    <dependency prefix="svg.batik-constants" artifact="org.apache.xmlgraphics:batik-constants:1.16" usage="ooxml-batik"/>
+    <dependency prefix="svg.batik-css" artifact="org.apache.xmlgraphics:batik-css:1.16" usage="ooxml-batik"/>
+    <dependency prefix="svg.batik-dom" artifact="org.apache.xmlgraphics:batik-dom:1.16" usage="ooxml-batik"/>
+    <dependency prefix="svg.batik-ext" artifact="org.apache.xmlgraphics:batik-ext:1.16" usage="ooxml-batik"/>
+    <dependency prefix="svg.batik-gvt" artifact="org.apache.xmlgraphics:batik-gvt:1.16" usage="ooxml-batik"/>
+    <dependency prefix="svg.batik-i18n" artifact="org.apache.xmlgraphics:batik-i18n:1.16" usage="ooxml-batik"/>
+    <dependency prefix="svg.batik-parser" artifact="org.apache.xmlgraphics:batik-parser:1.16" usage="ooxml-batik"/>
+    <dependency prefix="svg.batik-script" artifact="org.apache.xmlgraphics:batik-script:1.16" usage="ooxml-batik"/>
+    <dependency prefix="svg.batik-shared-resources" artifact="org.apache.xmlgraphics:batik-shared-resources:1.16" usage="ooxml-batik"/>
+    <dependency prefix="svg.batik-svg-dom" artifact="org.apache.xmlgraphics:batik-svg-dom:1.16" usage="ooxml-batik"/>
+    <dependency prefix="svg.batik-svggen" artifact="org.apache.xmlgraphics:batik-svggen:1.16" usage="ooxml-batik"/>
+    <dependency prefix="svg.batik-svgrasterizer" artifact="org.apache.xmlgraphics:batik-svgrasterizer:1.16" usage="ooxml-batik"/>
+    <dependency prefix="svg.batik-transcoder" artifact="org.apache.xmlgraphics:batik-transcoder:1.16" usage="ooxml-batik"/>
+    <dependency prefix="svg.batik-util" artifact="org.apache.xmlgraphics:batik-util:1.16" usage="ooxml-batik"/>
+    <dependency prefix="svg.batik-xml" artifact="org.apache.xmlgraphics:batik-xml:1.16" usage="ooxml-batik"/>
+    <dependency prefix="pdf.pdfbox" artifact="org.apache.pdfbox:pdfbox:2.0.27" usage="ooxml-provided"/>
+    <dependency prefix="pdf.fontbox" artifact="org.apache.pdfbox:fontbox:2.0.27" usage="ooxml-provided"/>
+    <dependency prefix="pdf.graphics2d" artifact="de.rototor.pdfbox:graphics2d:0.41" usage="ooxml-provided"/>
 
     <!-- jars in the ooxml-lib directory, see the fetch-ooxml-jars target-->
     <dependency prefix="ooxml.curvesapi" artifact="com.github.virtuald:curvesapi:1.07" usage="ooxml"/>
-    <dependency prefix="ooxml.xmlbeans" artifact="org.apache.xmlbeans:xmlbeans:5.0.3" usage="ooxml"/>
-    <dependency prefix="ooxml.commons-compress" artifact="org.apache.commons:commons-compress:1.21" usage="ooxml"/>
+    <dependency prefix="ooxml.xmlbeans" artifact="org.apache.xmlbeans:xmlbeans:5.1.1" usage="ooxml"/>
+    <dependency prefix="ooxml.commons-compress" artifact="org.apache.commons:commons-compress:1.22" usage="ooxml"/>
 
     <!-- jars in the ooxml-test-lib directory, see the fetch-ooxml-jars target-->
     <dependency prefix="ooxml.test.reflections" artifact="org.reflections:reflections:0.10.2" usage="ooxml-tests"/>
     <dependency prefix="ooxml.test.guava" artifact="com.google.guava:guava:31.1-jre" usage="ooxml-tests"/>
     <dependency prefix="ooxml.test.javassist" artifact="org.javassist:javassist:3.27.0-GA" usage="ooxml-tests"/>
-    <dependency prefix="ooxml.test.slf4j-api" artifact="org.slf4j:slf4j-api:1.7.36" usage="ooxml-tests"/>
+    <dependency prefix="ooxml.test.slf4j-api" artifact="org.slf4j:slf4j-api:2.0.6" usage="ooxml-tests"/>
     <dependency prefix="ooxml.test.opczip" artifact="com.github.rzymek:opczip:1.2.0" usage="ooxml-tests"/>
 
     <!-- coverage libs -->
-    <dependency prefix="jacoco" artifact="org.jacoco:jacoco:0.8.6" usage="util" packaging="zip"/>
-    <dependency prefix="asm" artifact="org.ow2.asm:asm:9.0" usage="util"/>
-    <dependency prefix="asm-commons" artifact="org.ow2.asm:asm-commons:9.0" usage="util"/>
-    <dependency prefix="asm-tree" artifact="org.ow2.asm:asm-tree:9.0" usage="util"/>
+    <dependency prefix="jacoco" artifact="org.jacoco:jacoco:0.8.8" usage="util" packaging="zip"/>
+    <dependency prefix="asm" artifact="org.ow2.asm:asm:9.4" usage="util"/>
+    <dependency prefix="asm-commons" artifact="org.ow2.asm:asm-commons:9.4" usage="util"/>
+    <dependency prefix="asm-tree" artifact="org.ow2.asm:asm-tree:9.4" usage="util"/>
 
     <!-- license and api checks -->
-    <dependency prefix="rat" artifact="org.apache.rat:apache-rat:0.13" usage="util"/>
-    <dependency prefix="forbidden" artifact="de.thetaphi:forbiddenapis:3.3" usage="util"/>
+    <dependency prefix="rat" artifact="org.apache.rat:apache-rat:0.15" usage="util"/>
+    <dependency prefix="forbidden" artifact="de.thetaphi:forbiddenapis:3.4" usage="util"/>
 
     <!-- See https://www.ecma-international.org/publications/standards/Ecma-376.htm -->
     <!-- "Copy these file(s), free of charge" -->
@@ -675,7 +676,7 @@ under the License.
                 <include name="log4j-api-2.14*.jar"/>
                 <include name="log4j-api-2.15*.jar"/>
                 <include name="log4j-api-2.16*.jar"/>
-                <include name="log4j-api-2.17.0.jar"/>
+                <include name="log4j-api-2.17*.jar"/>
                 <include name="commons-logging-1.2.jar"/>
                 <include name="*slf4j*.jar"/>
             </fileset>
@@ -684,27 +685,30 @@ under the License.
                 <include name="mockito-core-4.0*.jar"/>
                 <include name="mockito-core-4.2*.jar"/>
                 <include name="mockito-core-4.5*.jar"/>
+                <include name="mockito-core-4.6*.jar"/>
+                <include name="mockito-core-4.8*.jar"/>
                 <include name="hamcrest-core*"/>
                 <include name="junit-4*.jar"/>
                 <include name="*slf4j*.jar"/>
-                <include name="junit-jupiter-*-5.8.0.jar"/>
+                <include name="junit-jupiter-*-5.8.*.jar"/>
                 <include name="junit-jupiter-*-5.7.*.jar"/>
                 <include name="junit-platform-*-1.7.*.jar"/>
+                <include name="junit-platform-*-1.8.*.jar"/>
                 <include name="log4j-core-2.14*.jar"/>
                 <include name="log4j-core-2.15*.jar"/>
                 <include name="log4j-core-2.16*.jar"/>
-                <include name="log4j-core-2.17.0.jar"/>
+                <include name="log4j-core-2.17*.jar"/>
             </fileset>
             <fileset dir="${basedir}/lib/ooxml">
                 <include name="xmlbeans-3*.jar"/>
                 <include name="xmlbeans-4*.jar"/>
-                <include name="xmlbeans-5.0.0.jar"/>
-                <include name="xmlbeans-5.0.1.jar"/>
+                <include name="xmlbeans-5.0*.jar"/>
+                <include name="xmlbeans-5.1.0.jar"/>
             </fileset>
             <fileset dir="${basedir}/lib/ooxml-provided">
                 <include name="bc*-1.6*.jar"/>
                 <include name="batik*.jar"/>
-                <include name="slf4j*-1.7.30.jar"/>
+                <include name="slf4j*-1.*.jar"/>
                 <include name="xmlsec-2*.jar"/>
             </fileset>
             <fileset dir="${basedir}/lib/ooxml-tests">
@@ -712,11 +716,18 @@ under the License.
             </fileset>
             <fileset dir="${basedir}/lib/util">
                 <include name="asm*7.2.jar"/>
+                <include name="asm*9.0.jar"/>
+                <include name="asm*9.3.jar"/>
                 <include name="org.jacoco.*-0.8.5.*.jar"/>
+                <include name="org.jacoco.*-0.8.6.*.jar"/>
                 <include name="forbiddenapis-3.1.jar"/>
             </fileset>
             <fileset dir="${basedir}/lib/util">
                 <include name="jacoco-0.8.5.zip"/>
+                <include name="jacoco-0.8.6.zip"/>
+            </fileset>
+            <fileset dir="${basedir}/lib">
+                <include name="jacoco-*.zip"/>
             </fileset>
             <fileset dir="${basedir}/lib/excelant">
                 <include name="ant*1.10.1.jar"/>
@@ -829,6 +840,7 @@ under the License.
                     <available file="${ooxml.test.javassist.jar}"/>
                     <available file="${ooxml.test.slf4j-api.jar}"/>
                     <available file="${ooxml.test.opczip.jar}"/>
+                    <available file="${ooxml.test.stax2.jar}"/>
                     <available file="${svg.xml-apis-ext.jar}"/>
                     <available file="${svg.batik-anim.jar}"/>
                     <available file="${svg.batik-awt-util.jar}"/>
@@ -869,6 +881,7 @@ under the License.
         <downloadfile src="${ooxml.test.javassist.url}" dest="${ooxml.test.javassist.jar}"/>
         <downloadfile src="${ooxml.test.slf4j-api.url}" dest="${ooxml.test.slf4j-api.jar}"/>
         <downloadfile src="${ooxml.test.opczip.url}" dest="${ooxml.test.opczip.jar}"/>
+        <downloadfile src="${ooxml.test.stax2.url}" dest="${ooxml.test.stax2.jar}"/>
         <downloadfile src="${svg.batik-anim.url}" dest="${svg.batik-anim.jar}"/>
         <downloadfile src="${svg.batik-awt-util.url}" dest="${svg.batik-awt-util.jar}"/>
         <downloadfile src="${svg.batik-bridge.url}" dest="${svg.batik-bridge.jar}"/>
@@ -956,9 +969,9 @@ under the License.
             <zipfileset src="${ooxml.xsds.izip.1}"/>
             <fileset dir="${ooxml.visio.xsd.dir}"/>
             <fileset dir="${ooxml.schema.xsdconfig.dir}" includes="ooxmlSchemas.xsdconfig,markup-compatibility.xsd,vmlDrawing.xsd"/>
+            <fileset dir="${ooxml.schema.xsdconfig.dir}" includes="dml-drawing.xsd,word12.xsd,XAdES*.xsd,xlThreaded*.xsd,xmldsig*.xsd"/>
             <zipfileset src="${ooxml.xsds.izip.2}" includes="opc-digSig.xsd,opc-relationships.xsd"/>
             <fileset dir="${ooxml.security.xsd.dir}" includes="signatureInfo.xsd"/>
-            <fileset dir="${ooxml.schema.xsdconfig.dir}" includes="XAdES*.xsd,*.xsdconfig,xmldsig*.xsd"/>
         </copy>
 
         <taskdef name="xmlbean" classname="org.apache.xmlbeans.impl.tool.XMLBean">
@@ -1073,8 +1086,10 @@ under the License.
                 </filterchain>
             </loadresource>
 
+            <echo message="Building classes for @{module}"/>
+
             <!-- compile the sources -->
-            <javac release="8"
+            <javac
                    target="${jdk.version.class}"
                    source="${jdk.version.source}"
                    destdir="@{classes}"
@@ -1095,6 +1110,8 @@ under the License.
                     <replacestring from="poi-" to=""/>
                 </filterchain>
             </loadresource>
+
+            <echo message="Building java9+ classes for @{module}"/>
 
             <!-- compile jigsaw files to sources, so we don't forget to update/provide them for Java 8 builds -->
             <javac release="9"
@@ -1327,6 +1344,7 @@ under the License.
         <attribute name="modulepath-ref"/>
         <attribute name="module1" default=""/>
         <attribute name="module2" default=""/>
+        <attribute name="module3" default=""/>
         <attribute name="outputDir"/>
         <element name="elements" implicit="true"/>
         <sequential>
@@ -1379,11 +1397,15 @@ under the License.
 
             <local name="use_module1"/>
             <local name="use_module2"/>
+            <local name="use_module3"/>
             <condition property="use_module1" value="true" unless:true="${isJava8}">
                 <length string="@{module1}" when="greater" length="0"/>
             </condition>
             <condition property="use_module2" value="true" unless:true="${isJava8}">
                 <length string="@{module2}" when="greater" length="0"/>
+            </condition>
+            <condition property="use_module3" value="true" unless:true="${isJava8}">
+                <length string="@{module3}" when="greater" length="0"/>
             </condition>
 
             <!-- As of 2018, JaCoCo is managing expectations and stay on Java 5 and therefore don't support junitlauncher -->
@@ -1429,6 +1451,7 @@ under the License.
                         <jvmarg line="--add-modules org.junit.jupiter.params" unless:true="${isJava8}"/>
                         <jvmarg line="--add-modules org.apache.poi.@{module1}" if:set="use_module1"/>
                         <jvmarg line="--add-modules org.apache.poi.@{module2}" if:set="use_module2"/>
+                        <jvmarg line="--add-modules @{module3}" if:set="use_module3"/>
                     </fork>
 
                     <listener classname="Junit5Progress" />
@@ -1455,7 +1478,7 @@ under the License.
         </path>
 
         <poiunit failureproperty="ooxml.test.failed" heap="768" modulepath-ref="restest.modules"
-            module1="ooxml" module2="scratchpad" outputDir="${ooxml.reports.test}">
+            module1="ooxml" module2="scratchpad" module3="org.bouncycastle.pkix" outputDir="${ooxml.reports.test}">
             <zipfileset src="build/dist/maven/poi-ooxml-tests/poi-ooxml-${version.id}-tests.jar">
                 <include name="**/${testpattern}.class"/>
                 <exclude name="**/*$*.class"/>
@@ -1776,7 +1799,7 @@ under the License.
         <attribute name="type"/>
         <sequential>
             <poiunit failureproperty="ooxml.test.failed" heap="768" jacocodest="build/jacoco-@{type}.exec"
-                     modulepath-ref="@{modulepath-ref}" module1="ooxml" module2="scratchpad" outputDir="${ooxml.reports.test}">
+                     modulepath-ref="@{modulepath-ref}" module1="ooxml" module2="scratchpad" module3="org.bouncycastle.pkix" outputDir="${ooxml.reports.test}">
                 <zipfileset src="build/dist/maven/poi-ooxml-tests/poi-ooxml-${version.id}-tests.jar">
                     <include name="**/${testpattern}.class"/>
                     <exclude name="**/*$*.class"/>
@@ -1940,6 +1963,10 @@ under the License.
                 <attribute name="Automatic-Module-Name" value="org.apache.poi.ooxml.schemas"/>
             </manifest>
         </jar>
+
+        <delete file="${ooxml.lite.report}.clazz1"/>
+        <delete file="${ooxml.lite.report}.clazz2"/>
+        <delete file="${ooxml.lite.report}.xsb2"/>
     </target>
 
     <target name="test-ooxml-lite" depends="jacocotask,compile-ooxml-lite">
@@ -2101,6 +2128,11 @@ under the License.
                 <package name="org.apache.poi.ddf*"/>
             </group>
             <group>
+                <title>XDDF - Open Office XML Dreadful Drawing Format</title>
+                <package name="org.apache.poi.xddf*"/>
+            </group>
+
+            <group>
                 <title>HPSF - Horrible Property Set Format</title>
                 <package name="org.apache.poi.hpsf*"/>
             </group>
@@ -2156,11 +2188,20 @@ under the License.
             <group>
                 <title>Utilities</title>
                 <package name="org.apache.poi.util*"/>
+                <package name="org.apache.poi.ooxml.util*"/>
+            </group>
+            <group>
+                <title>Common</title>
+                <package name="org.apache.poi.common*"/>
+            </group>
+            <group>
+                <title>Extractor</title>
+                <package name="org.apache.poi.extractor*"/>
+                <package name="org.apache.poi.ooxml.extractor*"/>
             </group>
             <group>
                 <title>Examples</title>
-                <package name="org.apache.poi.hpsf.examples*"/>
-                <package name="org.apache.poi.hssf.usermodel.examples*"/>
+                <package name="org.apache.poi.examples*"/>
             </group>
         </javadoc>
     </target>
@@ -2463,8 +2504,7 @@ under the License.
             </fileset>
             <fileset dir="poi-ooxml-full/src">
                 <exclude name="main/xmlschema/org/apache/poi/xdgf/visio.xsd" />
-                <exclude name="main/xmlschema/org/apache/poi/schemas/XAdES*.xsd" />
-                <exclude name="main/xmlschema/org/apache/poi/schemas/xmldsig-core-schema.xsd" />
+                <exclude name="main/xmlschema/org/apache/poi/schemas/*.xsd" />
                 <exclude name="main/xmlschema/org/apache/poi/schemas/*.zip" />
             </fileset>
             <fileset dir="poi-scratchpad/src"/>
@@ -2576,27 +2616,30 @@ under the License.
 
         <!-- findbugs successor, spotbugs ... need to use the dependencies used in the spotbugs release. -->
         <!-- compare with the entries found in the MANIFEST.MF of spotbugs.jar -->
-        <dependency prefix="spotbugs" artifact="com.github.spotbugs:spotbugs:4.2.0" usage="${spotbugs.lib}" target="spotbugs.jar"/>
-        <dependency prefix="spotbugs-ant" artifact="com.github.spotbugs:spotbugs-ant:4.2.0" usage="${spotbugs.lib}" target="spotbugs-ant.jar"/>
-        <dependency prefix="spotbugs-anno" artifact="com.github.spotbugs:spotbugs-annotations:4.2.0" usage="${spotbugs.lib}" target="spotbugs-annotations.jar"/>
-        <dependency prefix="spotbugs.asm" artifact="org.ow2.asm:asm:9.0" usage="${spotbugs.lib}"/>
-        <dependency prefix="spotbugs.asm-analysis" artifact="org.ow2.asm:asm-analysis:9.0" usage="${spotbugs.lib}"/>
-        <dependency prefix="spotbugs.asm-commons" artifact="org.ow2.asm:asm-commons:9.0" usage="${spotbugs.lib}"/>
-        <dependency prefix="spotbugs.asm-tree" artifact="org.ow2.asm:asm-tree:9.0" usage="${spotbugs.lib}"/>
-        <dependency prefix="spotbugs.asm-util" artifact="org.ow2.asm:asm-util:9.0" usage="${spotbugs.lib}"/>
+        <dependency prefix="spotbugs" artifact="com.github.spotbugs:spotbugs:4.7.1" usage="${spotbugs.lib}" target="spotbugs.jar"/>
+        <dependency prefix="spotbugs-ant" artifact="com.github.spotbugs:spotbugs-ant:4.7.1" usage="${spotbugs.lib}" target="spotbugs-ant.jar"/>
+        <dependency prefix="spotbugs-anno" artifact="com.github.spotbugs:spotbugs-annotations:4.7.1" usage="${spotbugs.lib}" target="spotbugs-annotations.jar"/>
+        <dependency prefix="spotbugs.asm" artifact="org.ow2.asm:asm:9.3" usage="${spotbugs.lib}"/>
+        <dependency prefix="spotbugs.asm-analysis" artifact="org.ow2.asm:asm-analysis:9.3" usage="${spotbugs.lib}"/>
+        <dependency prefix="spotbugs.asm-commons" artifact="org.ow2.asm:asm-commons:9.3" usage="${spotbugs.lib}"/>
+        <dependency prefix="spotbugs.asm-tree" artifact="org.ow2.asm:asm-tree:9.3" usage="${spotbugs.lib}"/>
+        <dependency prefix="spotbugs.asm-util" artifact="org.ow2.asm:asm-util:9.3" usage="${spotbugs.lib}"/>
         <dependency prefix="spotbugs.jsr305" artifact="com.google.code.findbugs:jsr305:3.0.2" usage="${spotbugs.lib}"/>
         <dependency prefix="spotbugs.dom4j" artifact="org.dom4j:dom4j:2.1.3" usage="${spotbugs.lib}"/>
         <dependency prefix="spotbugs.jaxen" artifact="jaxen:jaxen:1.2.0" usage="${spotbugs.lib}"/>
         <dependency prefix="spotbugs.bcel" artifact="org.apache.bcel:bcel:6.5.0" usage="${spotbugs.lib}"/>
         <dependency prefix="spotbugs.slf4j-api" artifact="org.slf4j:slf4j-api:1.8.0-beta4" usage="${spotbugs.lib}"/>
-        <dependency prefix="spotbugs.commons-lang3" artifact="org.apache.commons:commons-lang3:3.11" usage="${spotbugs.lib}"/>
+        <dependency prefix="spotbugs.commons-lang3" artifact="org.apache.commons:commons-lang3:3.12.0" usage="${spotbugs.lib}"/>
         <dependency prefix="spotbugs.commons-text" artifact="org.apache.commons:commons-text:1.9" usage="${spotbugs.lib}"/>
+        <dependency prefix="spotbugs.commons-codec" artifact="commons-codec:commons-codec:1.11" usage="${spotbugs.lib}"/>
+        <dependency prefix="spotbugs.commons-logging" artifact="commons-logging:commons-logging:1.2" usage="${spotbugs.lib}"/>
         <dependency prefix="spotbugs.jcip-annotations" artifact="net.jcip:jcip-annotations:1.0" usage="${spotbugs.lib}"/>
-        <dependency prefix="spotbugs.icu4j" artifact="com.ibm.icu:icu4j:68.2" usage="${spotbugs.lib}" target="icu4j-63.1.jar"/>
+        <dependency prefix="spotbugs.icu4j" artifact="com.ibm.icu:icu4j:68.2" usage="${spotbugs.lib}" target="icu4j-68.2.jar"/>
         <dependency prefix="spotbugs.log4j-api" artifact="org.apache.logging.log4j:log4j-api:2.17.2" usage="${spotbugs.lib}"/>
         <dependency prefix="spotbugs.log4j-core" artifact="org.apache.logging.log4j:log4j-core:2.17.2" usage="${spotbugs.lib}"/>
         <dependency prefix="spotbugs.log4j-slf4j18-impl" artifact="org.apache.logging.log4j:log4j-slf4j18-impl:2.17.2" usage="${spotbugs.lib}"/>
-        <dependency prefix="spotbugs.saxon" artifact="net.sf.saxon:Saxon-HE:9.9.1-8" usage="${spotbugs.lib}"/>
+        <dependency prefix="spotbugs.saxon" artifact="net.sf.saxon:Saxon-HE:11.3" usage="${spotbugs.lib}"/>
+        <dependency prefix="spotbugs.xmlresolver" artifact="org.xmlresolver:xmlresolver:4.2.0" usage="${spotbugs.lib}"/>
 
         <mkdir dir="${basedir}${spotbugs.lib}/config"/>
 
@@ -2609,6 +2652,8 @@ under the License.
         <downloadfile src="${spotbugs.slf4j-api.url}" dest="${spotbugs.slf4j-api.jar}"/>
         <downloadfile src="${spotbugs.commons-lang3.url}" dest="${spotbugs.commons-lang3.jar}"/>
         <downloadfile src="${spotbugs.commons-text.url}" dest="${spotbugs.commons-text.jar}"/>
+        <downloadfile src="${spotbugs.commons-codec.url}" dest="${spotbugs.commons-codec.jar}"/>
+        <downloadfile src="${spotbugs.commons-logging.url}" dest="${spotbugs.commons-logging.jar}"/>
         <downloadfile src="${spotbugs.jcip-annotations.url}" dest="${spotbugs.jcip-annotations.jar}"/>
         <downloadfile src="${spotbugs.jsr305.url}" dest="${spotbugs.jsr305.jar}"/>
         <downloadfile src="${spotbugs.asm.url}" dest="${spotbugs.asm.jar}"/>
@@ -2620,6 +2665,7 @@ under the License.
         <downloadfile src="${spotbugs.log4j-core.url}" dest="${spotbugs.log4j-core.jar}"/>
         <downloadfile src="${spotbugs.log4j-slf4j18-impl.url}" dest="${spotbugs.log4j-slf4j18-impl.jar}"/>
         <downloadfile src="${spotbugs.saxon.url}" dest="${spotbugs.saxon.jar}"/>
+        <downloadfile src="${spotbugs.xmlresolver.url}" dest="${spotbugs.xmlresolver.jar}"/>
         <downloadfile src="${spotbugs.icu4j.url}" dest="${spotbugs.icu4j.jar}"/>
 
         <taskdef resource="edu/umd/cs/findbugs/anttask/tasks.properties">
@@ -2723,6 +2769,7 @@ under the License.
             </style>
             <classpath>
                 <pathelement location="${spotbugs.saxon.jar}"/>
+                <pathelement location="${spotbugs.xmlresolver.jar}"/>
             </classpath>
             <factory name="net.sf.saxon.TransformerFactoryImpl"/>
         </xslt>

@@ -17,6 +17,7 @@
 
 package org.apache.poi.xwpf.usermodel;
 
+import org.apache.poi.common.usermodel.PictureType;
 import org.apache.poi.ooxml.POIXMLDocumentPart;
 import org.apache.poi.ooxml.POIXMLException;
 import org.apache.poi.ooxml.POIXMLRelation;
@@ -100,11 +101,12 @@ public class XWPFComments extends POIXMLDocumentPart {
      * Adds a picture to the comments.
      *
      * @param is     The stream to read image from
-     * @param format The format of the picture.
+     * @param format The format of the picture, see {@link Document}
      * @return the index to this picture (0 based), the added picture can be
      * obtained from {@link #getAllPictures()} .
      * @throws InvalidFormatException If the format of the picture is not known.
      * @throws IOException            If reading the picture-data from the stream fails.
+     * @see #addPictureData(InputStream, PictureType)
      */
     public String addPictureData(InputStream is, int format) throws InvalidFormatException, IOException {
         byte[] data = IOUtils.toByteArrayWithMaxLength(is, XWPFPictureData.getMaxImageSize());
@@ -114,19 +116,52 @@ public class XWPFComments extends POIXMLDocumentPart {
     /**
      * Adds a picture to the comments.
      *
+     * @param is     The stream to read image from
+     * @param pictureType The {@link PictureType} of the picture
+     * @return the index to this picture (0 based), the added picture can be
+     * obtained from {@link #getAllPictures()} .
+     * @throws InvalidFormatException If the pictureType of the picture is not known.
+     * @throws IOException            If reading the picture-data from the stream fails.
+     * @since POI 5.2.3
+     */
+    public String addPictureData(InputStream is, PictureType pictureType) throws InvalidFormatException, IOException {
+        byte[] data = IOUtils.toByteArrayWithMaxLength(is, XWPFPictureData.getMaxImageSize());
+        return addPictureData(data, pictureType);
+    }
+
+    /**
+     * Adds a picture to the comments.
+     *
      * @param pictureData The picture data
-     * @param format      The format of the picture.
+     * @param format      The format of the picture, see {@link Document}
      * @return the index to this picture (0 based), the added picture can be
      * obtained from {@link #getAllPictures()} .
      * @throws InvalidFormatException If the format of the picture is not known.
      */
     public String addPictureData(byte[] pictureData, int format) throws InvalidFormatException {
-        XWPFPictureData xwpfPicData = document.findPackagePictureData(pictureData, format);
-        POIXMLRelation relDesc = XWPFPictureData.RELATIONS[format];
+        return addPictureData(pictureData, PictureType.findByOoxmlId(format));
+    }
+
+    /**
+     * Adds a picture to the comments.
+     *
+     * @param pictureData The picture data
+     * @param pictureType The {@link PictureType} of the picture.
+     * @return the index to this picture (0 based), the added picture can be
+     * obtained from {@link #getAllPictures()} .
+     * @throws InvalidFormatException If the pictureType of the picture is not known.
+     * @since POI 5.2.3
+     */
+    public String addPictureData(byte[] pictureData, PictureType pictureType) throws InvalidFormatException {
+        if (pictureType == null) {
+            throw new InvalidFormatException("pictureType is not supported");
+        }
+        XWPFPictureData xwpfPicData = document.findPackagePictureData(pictureData);
+        POIXMLRelation relDesc = XWPFPictureData.RELATIONS[pictureType.ooxmlId];
 
         if (xwpfPicData == null) {
             /* Part doesn't exist, create a new one */
-            int idx = getXWPFDocument().getNextPicNameNumber(format);
+            int idx = getXWPFDocument().getNextPicNameNumber(pictureType);
             xwpfPicData = (XWPFPictureData) createRelationship(relDesc, XWPFFactory.getInstance(), idx);
             /* write bytes to new part */
             PackagePart picDataPart = xwpfPicData.getPackagePart();

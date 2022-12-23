@@ -59,11 +59,10 @@ public class OOXMLLiteAgent {
         new AgentBuilder.Default()
         // .with(AgentBuilder.Listener.StreamWriting.toSystemOut())
             .type(named("org.apache.xmlbeans.impl.schema.XsbReader"))
-            .transform((builder, type, cl, m) ->
-                builder
-                .constructor(ElementMatchers.any())
-                .intercept(MethodDelegation.to(XsbLogger.class).andThen(SuperMethodCall.INSTANCE))
-            )
+            .transform(((builder, typeDescription, classLoader, module, protectionDomain) ->
+                    builder
+                        .constructor(ElementMatchers.any())
+                        .intercept(MethodDelegation.to(XsbLogger.class).andThen(SuperMethodCall.INSTANCE))))
             .installOn(inst);
     }
 

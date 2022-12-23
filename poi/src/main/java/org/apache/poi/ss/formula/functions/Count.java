@@ -61,29 +61,26 @@ public final class Count implements Function {
 
         int temp = 0;
 
-        for(int i=0; i<nArgs; i++) {
-            temp += CountUtils.countArg(args[i], _predicate);
+        for (ValueEval arg : args) {
+            temp += CountUtils.countArg(arg, _predicate);
 
         }
         return new NumberEval(temp);
     }
 
-    private static final I_MatchPredicate defaultPredicate = new I_MatchPredicate() {
+    private static final I_MatchPredicate defaultPredicate = valueEval -> {
 
-        public boolean matches(ValueEval valueEval) {
-
-            if(valueEval instanceof NumberEval) {
-                // only numbers are counted
-                return true;
-            }
-            if(valueEval == MissingArgEval.instance) {
-                // oh yeah, and missing arguments
-                return true;
-            }
-
-            // error values and string values not counted
-            return false;
+        if(valueEval instanceof NumberEval) {
+            // only numbers are counted
+            return true;
         }
+        if(valueEval == MissingArgEval.instance) {
+            // oh yeah, and missing arguments
+            return true;
+        }
+
+        // error values and string values not counted
+        return false;
     };
 
     /**

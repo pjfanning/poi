@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 
-import org.apache.poi.hssf.record.Record;
 import org.apache.poi.hssf.record.RecordFactory;
 
 /**
@@ -94,8 +93,7 @@ public class HSSFRequest {
 
         if (listeners != null) {
 
-            for (int k = 0; k < listeners.size(); k++) {
-                Object listenObj = listeners.get(k);
+            for (Object listenObj : listeners) {
                 if (listenObj instanceof AbortableHSSFListener) {
                     AbortableHSSFListener listener = (AbortableHSSFListener) listenObj;
                     userCode = listener.abortableProcessRecord(rec);
