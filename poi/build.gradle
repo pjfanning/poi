@@ -42,9 +42,7 @@ sourceSets {
 dependencies {
     api "commons-codec:commons-codec:${commonsCodecVersion}"
     api 'org.apache.commons:commons-collections4:4.4'
-    api ("org.apache.commons:commons-math4:${commonsMathVersion}") {
-      exclude group: 'org.apache.commons', module: 'commons-numbers-complex-streams'
-    }
+    api "org.apache.commons:commons-math4-legacy:${commonsMathVersion}"
     api "org.apache.commons:commons-numbers-angle:1.0"
     api "org.apache.commons:commons-numbers-arrays:1.0"
     api "org.apache.commons:commons-numbers-complex:1.0"

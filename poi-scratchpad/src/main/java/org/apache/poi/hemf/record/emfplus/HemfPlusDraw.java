@@ -38,9 +38,9 @@ import java.util.PrimitiveIterator.OfInt;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
-import org.apache.commons.math4.linear.LUDecomposition;
-import org.apache.commons.math4.linear.MatrixUtils;
-import org.apache.commons.math4.linear.RealMatrix;
+import org.apache.commons.math4.legacy.linear.LUDecomposition;
+import org.apache.commons.math4.legacy.linear.MatrixUtils;
+import org.apache.commons.math4.legacy.linear.RealMatrix;
 import org.apache.poi.hemf.draw.HemfDrawProperties;
 import org.apache.poi.hemf.draw.HemfGraphics;
 import org.apache.poi.hemf.record.emf.HemfFill;

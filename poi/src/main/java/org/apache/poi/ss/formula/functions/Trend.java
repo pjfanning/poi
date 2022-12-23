@@ -27,8 +27,8 @@ package org.apache.poi.ss.formula.functions;
 
 import java.util.Arrays;
 
-import org.apache.commons.math4.linear.SingularMatrixException;
-import org.apache.commons.math4.stat.regression.OLSMultipleLinearRegression;
+import org.apache.commons.math4.legacy.linear.SingularMatrixException;
+import org.apache.commons.math4.legacy.stat.regression.OLSMultipleLinearRegression;
 import org.apache.poi.ss.formula.CacheAreaEval;
 import org.apache.poi.ss.formula.eval.AreaEval;
 import org.apache.poi.ss.formula.eval.BoolEval;
