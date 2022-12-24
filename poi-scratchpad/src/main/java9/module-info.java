@@ -18,7 +18,8 @@
 module org.apache.poi.scratchpad {
     requires transitive org.apache.poi.poi;
     requires java.desktop;
-    requires org.apache.commons.math4;
+    requires org.apache.commons.math4.legacy;
+    requires org.apache.commons.statistics.distribution;
     requires org.apache.commons.io;
     requires org.apache.commons.codec;
     requires org.apache.logging.log4j;
