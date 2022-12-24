@@ -23,8 +23,6 @@ module org.apache.poi.ooxml {
     requires org.apache.commons.codec;
     requires org.apache.commons.compress;
     requires org.apache.commons.io;
-    requires org.apache.commons.math4.legacy;
-    requires org.apache.commons.statistics.distribution;
     requires SparseBitSet;
     requires org.apache.logging.log4j;
     requires java.logging;
