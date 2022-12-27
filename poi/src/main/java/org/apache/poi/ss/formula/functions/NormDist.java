@@ -17,7 +17,7 @@
 
 package org.apache.poi.ss.formula.functions;
 
-import org.apache.commons.math3.distribution.NormalDistribution;
+import org.apache.commons.statistics.distribution.NormalDistribution;
 import org.apache.poi.ss.formula.OperationEvaluationContext;
 import org.apache.poi.ss.formula.eval.ErrorEval;
 import org.apache.poi.ss.formula.eval.EvaluationException;
@@ -37,7 +37,7 @@ public final class NormDist extends Fixed4ArgFunction implements FreeRefFunction
     public static final NormDist instance = new NormDist();
 
     static double probability(double x, double mean, double stdev, boolean cumulative) {
-        NormalDistribution normalDistribution = new NormalDistribution(mean, stdev);
+        NormalDistribution normalDistribution = NormalDistribution.of(mean, stdev);
         return cumulative ? normalDistribution.cumulativeProbability(x) : normalDistribution.density(x);
     }
 

@@ -119,7 +119,7 @@ subprojects {
         commonsCodecVersion = '1.15'
         commonsCompressVersion = '1.22'
         commonsIoVersion = '2.11.0'
-        commonsMathVersion = '3.6.1'
+        commonsMathVersion = '4.0-beta1'
         junitVersion = '5.9.0'
         log4jVersion = '2.19.0'
         mockitoVersion = '4.10.0'
@@ -794,8 +794,11 @@ distributions {
     }
 }
 
-binDistZip.dependsOn 'zipJavadocs', ':poi-ooxml-lite:jar'
-binDistTar.dependsOn 'zipJavadocs', ':poi-ooxml-lite:jar'
+binDistZip.dependsOn 'zipJavadocs', ':poi-ooxml-lite:jar', ':poi-ooxml-full:cyclonedxBom',
+        ':poi-ooxml:cyclonedxBom', 'poi-ooxml-lite:cyclonedxBom',
+        ':poi-scratchpad:cyclonedxBom', ':poi-excelant:cyclonedxBom',
+        ':poi:cyclonedxBom', ':poi-examples:cyclonedxBom'
+binDistTar.dependsOn 'binDistZip'
 
 task soLinkCheck() {
     doLast {
@@ -818,19 +821,19 @@ task soLinkCheck() {
 }
 
 var srcDep = [
-    ':poi:cacheJava9',
-    ':poi:cacheTest9',
-    ':poi-ooxml-full:cacheJava9',
-    ':poi-ooxml-lite-agent:cacheJava9',
-    ':poi-ooxml:cacheJava9',
-    ':poi-ooxml:cacheTest9',
-    ':poi-scratchpad:cacheJava9',
-    ':poi-scratchpad:cacheTest9',
-    ':poi-excelant:cacheJava9',
-    ':poi-excelant:cacheTest9',
-    ':poi-examples:cacheJava9',
-    ':poi-integration:cacheTest9',
-    ':poi-ooxml-lite:cacheJava9',
+    ':poi:compileJava9',
+    ':poi:compileTest9',
+    ':poi-ooxml-full:compileJava9',
+    ':poi-ooxml-lite-agent:compileJava9',
+    ':poi-ooxml:compileJava9',
+    ':poi-ooxml:compileTest9',
+    ':poi-scratchpad:compileJava9',
+    ':poi-scratchpad:compileTest9',
+    ':poi-excelant:compileJava9',
+    ':poi-excelant:compileTest9',
+    ':poi-examples:compileJava9',
+    ':poi-integration:compileTest9',
+    ':poi-ooxml-lite:compileJava9',
     ':poi-ooxml-lite:generateModuleInfo'
 ]
 

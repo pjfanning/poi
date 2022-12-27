@@ -24,14 +24,10 @@ configurations {
 
 sourceSets {
     main {
-        if (jdkVersion > 8) {
-            output.dir(JAVA9_OUT, builtBy: 'cacheJava9')
-        }
+        output.dir(JAVA9_OUT, builtBy: 'compileJava9')
     }
     test {
-        if (jdkVersion > 8) {
-            output.dir(TEST9_OUT, builtBy: 'cacheTest9')
-        }
+        output.dir(TEST9_OUT, builtBy: 'compileTest9')
     }
 }
 
@@ -39,7 +35,7 @@ dependencies {
     api project(':poi')
     api project(path:':poi', configuration: 'archives')
     api "org.apache.logging.log4j:log4j-api:${log4jVersion}"
-    api "org.apache.commons:commons-math3:${commonsMathVersion}"
+    api "org.apache.commons:commons-math4-legacy:${commonsMathVersion}"
     api "commons-codec:commons-codec:${commonsCodecVersion}"
 
     testImplementation project(path: ':poi', configuration: 'tests')
@@ -65,9 +61,10 @@ task compileJava9(type: JavaCompile) {
     dependsOn 'compileJava', ':poi:jar'
 
     javaCompiler = javaToolchains.compilerFor {
-        languageVersion = JavaLanguageVersion.of(jdkVersion)
-        if (jdkVendor != '') vendor = JvmVendorSpec.matching(jdkVendor)
+        languageVersion = JavaLanguageVersion.of(Math.max(11, jdkVersion))
     }
+    sourceCompatibility = 1.9
+    targetCompatibility = 1.9
     destinationDirectory = file(JAVA9_OUT + VERSIONS9)
     source = file(JAVA9_SRC)
     classpath = files()
@@ -75,26 +72,16 @@ task compileJava9(type: JavaCompile) {
         '--patch-module', "${MODULE_NAME}=${sourceSets.main.output.classesDirs.asPath}",
         '--module-path', files(MAIN_MODULE_PATH).asPath
     ]
-
-    onlyIf {
-        jdkVersion > 8
-    }
-}
-
-task cacheJava9(type: Copy) {
-    dependsOn 'compileJava9'
-
-    from(file(JAVA9_OUT + VERSIONS9))
-    into(JAVA9_SRC)
 }
 
 task compileTest9(type: JavaCompile) {
     dependsOn 'compileTestJava', ':poi:jar'
 
     javaCompiler = javaToolchains.compilerFor {
-        languageVersion = JavaLanguageVersion.of(jdkVersion)
-        if (jdkVendor != '') vendor = JvmVendorSpec.matching(jdkVendor)
+        languageVersion = JavaLanguageVersion.of(Math.max(11, jdkVersion))
     }
+    sourceCompatibility = 1.9
+    targetCompatibility = 1.9
     destinationDirectory = file(TEST9_OUT + VERSIONS9)
     source = file(TEST9_SRC)
     options.compilerArgs = [
@@ -102,29 +89,11 @@ task compileTest9(type: JavaCompile) {
         '--module-path', files(TEST_MODULE_PATH).asPath
     ]
     classpath = files()
-
-    onlyIf {
-        jdkVersion > 8
-    }
 }
 
-
-task cacheTest9(type: Copy) {
-    dependsOn 'compileTest9'
-
-    from(file(TEST9_OUT + VERSIONS9))
-    into(TEST9_SRC)
-}
 
 jar {
-    dependsOn cyclonedxBom
     destinationDirectory = file("../build/dist/maven/${project.archivesBaseName}")
-
-    if (jdkVersion == 8) {
-        into('META-INF/versions/9') {
-            from JAVA9_SRC include '*.class'
-        }
-    }
 
     manifest {
         attributes('Automatic-Module-Name': MODULE_NAME, 'Multi-Release': 'true')
@@ -139,12 +108,6 @@ task testJar(type: Jar, dependsOn: testClasses) {
     classifier 'tests'
     // ignore second module-info.class from main
     duplicatesStrategy = 'exclude'
-
-    if (jdkVersion == 8) {
-        into('META-INF/versions/9') {
-            from TEST9_SRC include '*.class'
-        }
-    }
 
     from sourceSets.test.output + sourceSets.main.output
 

@@ -16,7 +16,7 @@
 ==================================================================== */
 package org.apache.poi.ss.formula.functions;
 
-import org.apache.commons.math3.util.ArithmeticUtils;
+import org.apache.commons.numbers.core.ArithmeticUtils;
 import org.apache.poi.ss.formula.OperationEvaluationContext;
 import org.apache.poi.ss.formula.eval.ErrorEval;
 import org.apache.poi.ss.formula.eval.EvaluationException;

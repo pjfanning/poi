@@ -17,7 +17,7 @@
 
 package org.apache.poi.ss.formula.functions;
 
-import org.apache.commons.math3.distribution.PoissonDistribution;
+import org.apache.commons.statistics.distribution.PoissonDistribution;
 import org.apache.poi.ss.formula.OperationEvaluationContext;
 import org.apache.poi.ss.formula.eval.BoolEval;
 import org.apache.poi.ss.formula.eval.ErrorEval;
@@ -86,7 +86,7 @@ public class Poisson implements FreeRefFunction {
 
             // truncate x : as per excel function def
             boolean cumulative = ((BoolEval)arg2).getBooleanValue();
-            PoissonDistribution poissonDistribution = new PoissonDistribution(mean);
+            PoissonDistribution poissonDistribution = PoissonDistribution.of(mean);
             double result = cumulative ?
                     poissonDistribution.cumulativeProbability((int) x) :
                     poissonDistribution.probability((int) x);

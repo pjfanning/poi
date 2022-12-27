@@ -18,7 +18,7 @@
 module org.apache.poi.scratchpad {
     requires transitive org.apache.poi.poi;
     requires java.desktop;
-    requires commons.math3;
+    requires org.apache.commons.math4.legacy;
     requires org.apache.logging.log4j;
 
     uses org.apache.poi.sl.usermodel.MetroShapeProvider;
