@@ -59,10 +59,10 @@ task compileJava9(type: JavaCompile) {
     dependsOn 'compileJava', ':poi-ooxml:jar', ':poi-scratchpad:jar'
 
     javaCompiler = javaToolchains.compilerFor {
-        languageVersion = JavaLanguageVersion.of(jdkVersion)
-        if (jdkVendor != '') vendor = JvmVendorSpec.matching(jdkVendor)
+        languageVersion = JavaLanguageVersion.of(Math.max(11, jdkVersion))
     }
-
+    sourceCompatibility = 1.9
+    targetCompatibility = 1.9
     destinationDirectory = file(JAVA9_OUT + VERSIONS9)
     source = file(JAVA9_SRC)
     classpath = files()
@@ -70,11 +70,6 @@ task compileJava9(type: JavaCompile) {
         '--patch-module', "${MODULE_NAME}=${sourceSets.main.output.classesDirs.asPath}",
         '--module-path', files(MODULE_COMPILE_PATH).asPath
     ]
-
-
-    onlyIf {
-        jdkVersion > 8
-    }
 }
 
 task cacheJava9(type: Copy) {
@@ -85,7 +80,7 @@ task cacheJava9(type: Copy) {
 }
 
 jar {
-    dependsOn cacheJava9, cyclonedxBom
+    dependsOn cacheJava9
 
     destinationDirectory = file("../build/dist/maven/${project.archivesBaseName}")
 

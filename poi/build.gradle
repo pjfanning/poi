@@ -96,9 +96,10 @@ task compileJava9(type: JavaCompile) {
     dependsOn 'compileJava'
 
     javaCompiler = javaToolchains.compilerFor {
-        languageVersion = JavaLanguageVersion.of(jdkVersion)
-        if (jdkVendor != '') vendor = JvmVendorSpec.matching(jdkVendor)
+        languageVersion = JavaLanguageVersion.of(Math.max(11, jdkVersion))
     }
+    sourceCompatibility = 1.9
+    targetCompatibility = 1.9
     destinationDirectory = file(JAVA9_OUT + VERSIONS9)
     source = file(JAVA9_SRC)
     classpath = files()
@@ -106,10 +107,6 @@ task compileJava9(type: JavaCompile) {
         '--patch-module', "${MODULE_NAME}=${sourceSets.main.output.classesDirs.asPath}",
         '--module-path', sourceSets.main.compileClasspath.asPath
     ]
-
-    onlyIf {
-        jdkVersion > 8
-    }
 }
 
 task cacheJava9(type: Copy) {
@@ -123,10 +120,10 @@ task compileTest9(type: JavaCompile) {
     dependsOn 'compileTestJava'
 
     javaCompiler = javaToolchains.compilerFor {
-        languageVersion = JavaLanguageVersion.of(jdkVersion)
-        if (jdkVendor != '') vendor = JvmVendorSpec.matching(jdkVendor)
+        languageVersion = JavaLanguageVersion.of(Math.max(11, jdkVersion))
     }
-
+    sourceCompatibility = 1.9
+    targetCompatibility = 1.9
     destinationDirectory = file(TEST9_OUT + VERSIONS9)
     source = file(TEST9_SRC)
     options.compilerArgs = [
@@ -134,10 +131,6 @@ task compileTest9(type: JavaCompile) {
         '--module-path', files(MODULE_PATH).asPath
     ]
     classpath = files()
-
-    onlyIf {
-        jdkVersion > 8
-    }
 }
 
 
@@ -149,7 +142,7 @@ task cacheTest9(type: Copy) {
 }
 
 jar {
-    dependsOn cacheJava9, cyclonedxBom
+    dependsOn cacheJava9
 
     if (jdkVersion == 8) {
         into('META-INF/versions/9') {
