@@ -209,11 +209,7 @@ public abstract class OPCPackage implements RelationshipSource, Closeable {
        OPCPackage pack = new ZipPackage(zipEntry, PackageAccess.READ);
        try {
            if (pack.partList == null) {
-               List<PackagePart> parts = pack.getParts();
-               if (parts.size() > ZipSecureFile.getMaxFileCount()) {
-                   throw new InvalidFormatException(String.format(
-                           Locale.ROOT, MAX_FILE_COUNT_MSG, ZipSecureFile.getMaxFileCount()));
-               }
+               pack.getParts();
            }
            // pack.originalPackagePath = file.getAbsolutePath();
            return pack;
@@ -254,11 +250,7 @@ public abstract class OPCPackage implements RelationshipSource, Closeable {
         boolean success = false;
         if (pack.partList == null && access != PackageAccess.WRITE) {
             try {
-                List<PackagePart> parts = pack.getParts();
-                if (parts.size() > ZipSecureFile.getMaxFileCount()) {
-                    throw new InvalidFormatException(String.format(
-                            Locale.ROOT, MAX_FILE_COUNT_MSG, ZipSecureFile.getMaxFileCount()));
-                }
+                pack.getParts();
                 success = true;
             } finally {
                 if (! success) {
@@ -295,11 +287,7 @@ public abstract class OPCPackage implements RelationshipSource, Closeable {
        OPCPackage pack = new ZipPackage(file, access); //NOSONAR
        try {
            if (pack.partList == null && access != PackageAccess.WRITE) {
-               List<PackagePart> parts = pack.getParts();
-               if (parts.size() > ZipSecureFile.getMaxFileCount()) {
-                   throw new InvalidFormatException(String.format(
-                           Locale.ROOT, MAX_FILE_COUNT_MSG, ZipSecureFile.getMaxFileCount()));
-               }
+               pack.getParts();
            }
            pack.originalPackagePath = file.getAbsolutePath();
            return pack;
@@ -761,7 +749,12 @@ public abstract class OPCPackage implements RelationshipSource, Closeable {
             boolean needCorePropertiesPart = true;
 
             partList = getPartsImpl();
-            for (PackagePart part : new ArrayList<>(partList.sortedValues())) {
+            List<PackagePart> parts = new ArrayList<>(partList.sortedValues());
+            if (parts.size() > ZipSecureFile.getMaxFileCount()) {
+                throw new InvalidFormatException(String.format(
+                        Locale.ROOT, MAX_FILE_COUNT_MSG, ZipSecureFile.getMaxFileCount()));
+            }
+            for (PackagePart part : parts) {
                 part.loadRelationships();
 
                 // Check OPC compliance rule M4.1
