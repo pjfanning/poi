@@ -45,6 +45,13 @@ public class ZipSecureFile extends ZipFile {
     /* package */ static final long DEFAULT_MAX_TEXT_SIZE = 10*1024*1024L;
     private static long MAX_TEXT_SIZE = DEFAULT_MAX_TEXT_SIZE;
 
+    public static final String MAX_FILE_COUNT_MSG =
+            "The file appears to be potentially malicious. This file embeds more internal file entries than expected.\n" +
+                    "This may indicates that the file could pose a security risk.\n" +
+                    "You can adjust this limit via ZipSecureFile.setMaxFileCount() if you need to work with files which are very large.\n" +
+                    "Limits: MAX_FILE_COUNT: %d";
+
+
     private final String fileName;
 
     /**

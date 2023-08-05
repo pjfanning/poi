@@ -21,7 +21,7 @@ import static org.apache.poi.openxml4j.opc.ContentTypes.EXTENSION_XML;
 import static org.apache.poi.openxml4j.opc.ContentTypes.PLAIN_OLD_XML;
 import static org.apache.poi.openxml4j.opc.ContentTypes.RELATIONSHIPS_PART;
 import static org.apache.poi.openxml4j.opc.PackagingURIHelper.RELATIONSHIP_PART_EXTENSION_NAME;
-import static org.apache.poi.openxml4j.util.ZipArchiveThresholdInputStream.MAX_FILE_COUNT_MSG;
+
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
@@ -751,7 +751,7 @@ public abstract class OPCPackage implements RelationshipSource, Closeable {
             partList = getPartsImpl();
             if (partList.size() > ZipSecureFile.getMaxFileCount()) {
                 throw new InvalidFormatException(String.format(
-                        Locale.ROOT, MAX_FILE_COUNT_MSG, ZipSecureFile.getMaxFileCount()));
+                        Locale.ROOT, ZipSecureFile.MAX_FILE_COUNT_MSG, ZipSecureFile.getMaxFileCount()));
             }
             for (PackagePart part : new ArrayList<>(partList.sortedValues())) {
                 part.loadRelationships();
