@@ -37,7 +37,9 @@ public class ZipSecureFile extends ZipFile {
     private static final Logger LOG = LogManager.getLogger(ZipSecureFile.class);
     /* package */ static double MIN_INFLATE_RATIO = 0.01d;
     /* package */ static final long DEFAULT_MAX_ENTRY_SIZE = 0xFFFFFFFFL;
+    /* package */ static final long DEFAULT_MAX_FILE_COUNT = 1000;
     /* package */ static long MAX_ENTRY_SIZE = DEFAULT_MAX_ENTRY_SIZE;
+    /* package */ static long MAX_FILE_COUNT = DEFAULT_MAX_FILE_COUNT;
 
     // The maximum chars of extracted text
     /* package */ static final long DEFAULT_MAX_TEXT_SIZE = 10*1024*1024L;
@@ -67,6 +69,30 @@ public class ZipSecureFile extends ZipFile {
     public static double getMinInflateRatio() {
         return MIN_INFLATE_RATIO;
     }
+
+    /**
+     * Returns the current maximum file count that is used.
+     *
+     * See setMaxFileCount() for details.
+     *
+     * @return The max accepted file count (i.e. the max number of files we allow inside zip files that we read - including OOXML files like xlsx, docx, pptx, etc.).
+     * @since POI 5.2.4
+     */
+    public static long getMaxFileCount() {
+        return MAX_FILE_COUNT;
+    }
+
+    /**
+     * Sets the maximum file count that we allow inside zip files that we read -
+     * including OOXML files like xlsx, docx, pptx, etc. The default is 1000.
+     *
+     * @param maxFileCount The max accepted file count
+     * @since POI 5.2.4
+     */
+    public static void setMaxFileCount(final long maxFileCount) {
+        MAX_FILE_COUNT = maxFileCount;
+    }
+
 
     /**
      * Sets the maximum file size of a single zip entry. It defaults to 4GB,
