@@ -40,7 +40,7 @@ public class ZipArchiveThresholdInputStream extends FilterInputStream {
     // don't alert for expanded sizes smaller than 100k
     private static final long GRACE_ENTRY_SIZE = 100*1024L;
 
-    private static final String MAX_FILE_COUNT_MSG =
+    public static final String MAX_FILE_COUNT_MSG =
             "The file appears to be potentially malicious. This file embeds more internal file entries than expected.\n" +
                     "This may indicates that the file could pose a security risk.\n" +
                     "You can adjust this limit via ZipSecureFile.setMaxFileCount() if you need to work with files which are very large.\n" +

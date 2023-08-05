@@ -47,15 +47,14 @@ class TestXSSFFileLimit {
     }
 
     @Test
-    void testFileWithReducedFileLimit() throws InvalidFormatException {
+    void testFileWithReducedFileLimit() throws IOException {
         final File file = HSSFTestDataSamples.getSampleFile("HeaderFooterComplexFormats.xlsx");
         final long defaultLimit = ZipSecureFile.getMaxFileCount();
         ZipSecureFile.setMaxFileCount(5);
         try {
             XSSFWorkbook xssfWorkbook = new XSSFWorkbook(file);
-            // TODO need to see if this can be made to fail
-            //fail("expected IOException");
-        } catch (IOException e) {
+            fail("expected InvalidFormatException");
+        } catch (InvalidFormatException e) {
             assertTrue(e.getMessage().contains("ZipSecureFile.setMaxFileCount()"),
                     "unexpected exception message: " + e.getMessage());
         } finally {

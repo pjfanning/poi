@@ -47,15 +47,14 @@ class TestOPCPackageFileLimit {
     }
 
     @Test
-    void testFileWithReducedFileLimit() throws InvalidFormatException {
+    void testFileWithReducedFileLimit() {
         final File file = HSSFTestDataSamples.getSampleFile("HeaderFooterComplexFormats.xlsx");
         final long defaultLimit = ZipSecureFile.getMaxFileCount();
         ZipSecureFile.setMaxFileCount(5);
         try {
             OPCPackage opcPackage = OPCPackage.open(file);
-            // TODO need to see if this can be made to fail
-            //fail("expected IOException");
-        } catch (Exception e) {
+            fail("expected InvalidFormatException");
+        } catch (InvalidFormatException e) {
             assertTrue(e.getMessage().contains("ZipSecureFile.setMaxFileCount()"),
                     "unexpected exception message: " + e.getMessage());
         } finally {

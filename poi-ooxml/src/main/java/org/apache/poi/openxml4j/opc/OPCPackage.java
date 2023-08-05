@@ -21,7 +21,7 @@ import static org.apache.poi.openxml4j.opc.ContentTypes.EXTENSION_XML;
 import static org.apache.poi.openxml4j.opc.ContentTypes.PLAIN_OLD_XML;
 import static org.apache.poi.openxml4j.opc.ContentTypes.RELATIONSHIPS_PART;
 import static org.apache.poi.openxml4j.opc.PackagingURIHelper.RELATIONSHIP_PART_EXTENSION_NAME;
-
+import static org.apache.poi.openxml4j.util.ZipArchiveThresholdInputStream.MAX_FILE_COUNT_MSG;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
@@ -37,6 +37,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -59,6 +60,7 @@ import org.apache.poi.openxml4j.opc.internal.marshallers.ZipPackagePropertiesMar
 import org.apache.poi.openxml4j.opc.internal.unmarshallers.PackagePropertiesUnmarshaller;
 import org.apache.poi.openxml4j.opc.internal.unmarshallers.UnmarshallContext;
 import org.apache.poi.openxml4j.util.ZipEntrySource;
+import org.apache.poi.openxml4j.util.ZipSecureFile;
 import org.apache.poi.util.IOUtils;
 import org.apache.poi.util.NotImplemented;
 import org.apache.poi.util.StringUtil;
@@ -207,7 +209,11 @@ public abstract class OPCPackage implements RelationshipSource, Closeable {
        OPCPackage pack = new ZipPackage(zipEntry, PackageAccess.READ);
        try {
            if (pack.partList == null) {
-               pack.getParts();
+               List<PackagePart> parts = pack.getParts();
+               if (parts.size() > ZipSecureFile.getMaxFileCount()) {
+                   throw new InvalidFormatException(String.format(
+                           Locale.ROOT, MAX_FILE_COUNT_MSG, ZipSecureFile.getMaxFileCount()));
+               }
            }
            // pack.originalPackagePath = file.getAbsolutePath();
            return pack;
@@ -248,7 +254,11 @@ public abstract class OPCPackage implements RelationshipSource, Closeable {
         boolean success = false;
         if (pack.partList == null && access != PackageAccess.WRITE) {
             try {
-                pack.getParts();
+                List<PackagePart> parts = pack.getParts();
+                if (parts.size() > ZipSecureFile.getMaxFileCount()) {
+                    throw new InvalidFormatException(String.format(
+                            Locale.ROOT, MAX_FILE_COUNT_MSG, ZipSecureFile.getMaxFileCount()));
+                }
                 success = true;
             } finally {
                 if (! success) {
@@ -285,7 +295,11 @@ public abstract class OPCPackage implements RelationshipSource, Closeable {
        OPCPackage pack = new ZipPackage(file, access); //NOSONAR
        try {
            if (pack.partList == null && access != PackageAccess.WRITE) {
-               pack.getParts();
+               List<PackagePart> parts = pack.getParts();
+               if (parts.size() > ZipSecureFile.getMaxFileCount()) {
+                   throw new InvalidFormatException(String.format(
+                           Locale.ROOT, MAX_FILE_COUNT_MSG, ZipSecureFile.getMaxFileCount()));
+               }
            }
            pack.originalPackagePath = file.getAbsolutePath();
            return pack;
