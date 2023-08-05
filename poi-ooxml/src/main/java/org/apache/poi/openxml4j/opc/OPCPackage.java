@@ -749,12 +749,11 @@ public abstract class OPCPackage implements RelationshipSource, Closeable {
             boolean needCorePropertiesPart = true;
 
             partList = getPartsImpl();
-            List<PackagePart> parts = new ArrayList<>(partList.sortedValues());
-            if (parts.size() > ZipSecureFile.getMaxFileCount()) {
+            if (partList.size() > ZipSecureFile.getMaxFileCount()) {
                 throw new InvalidFormatException(String.format(
                         Locale.ROOT, MAX_FILE_COUNT_MSG, ZipSecureFile.getMaxFileCount()));
             }
-            for (PackagePart part : parts) {
+            for (PackagePart part : new ArrayList<>(partList.sortedValues())) {
                 part.loadRelationships();
 
                 // Check OPC compliance rule M4.1
