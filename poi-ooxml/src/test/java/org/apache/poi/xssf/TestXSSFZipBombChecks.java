@@ -27,10 +27,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-class TestXSSFFileLimit {
+class TestXSSFZipBombChecks {
     @Test
     void testWithReducedFileLimit() {
         final long defaultLimit = ZipSecureFile.getMaxFileCount();
@@ -61,4 +62,39 @@ class TestXSSFFileLimit {
             ZipSecureFile.setMaxFileCount(defaultLimit);
         }
     }
+
+    @Test
+    void testWithGraceEntrySize() throws IOException {
+        final double defaultInflateRatio = ZipSecureFile.getMinInflateRatio();
+        // setting MinInflateRatio but the default GraceEntrySize will mean this is ignored
+        // this exception will not happen with the default GraceEntrySize
+        ZipSecureFile.setMinInflateRatio(0.50);
+        try (InputStream is = HSSFTestDataSamples.openSampleFileStream("HeaderFooterComplexFormats.xlsx")) {
+            XSSFWorkbook xssfWorkbook = new XSSFWorkbook(is);
+            assertNotNull(xssfWorkbook);
+        } finally {
+            ZipSecureFile.setMinInflateRatio(defaultInflateRatio);
+        }
+    }
+
+    @Test
+    void testWithReducedGraceEntrySize() {
+        final long defaultGraceSize = ZipSecureFile.getGraceEntrySize();
+        final double defaultInflateRatio = ZipSecureFile.getMinInflateRatio();
+        ZipSecureFile.setGraceEntrySize(0);
+        // setting MinInflateRatio to cause an exception
+        // this exception will not happen with the default GraceEntrySize
+        ZipSecureFile.setMinInflateRatio(0.50);
+        try (InputStream is = HSSFTestDataSamples.openSampleFileStream("HeaderFooterComplexFormats.xlsx")) {
+            XSSFWorkbook xssfWorkbook = new XSSFWorkbook(is);
+            fail("expected IOException");
+        } catch (IOException e) {
+            assertTrue(e.getMessage().contains("ZipSecureFile.setMinInflateRatio()"),
+                    "unexpected exception message: " + e.getMessage());
+        } finally {
+            ZipSecureFile.setMinInflateRatio(defaultInflateRatio);
+            ZipSecureFile.setGraceEntrySize(defaultGraceSize);
+        }
+    }
+
 }

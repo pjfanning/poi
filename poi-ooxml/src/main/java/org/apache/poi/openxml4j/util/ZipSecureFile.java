@@ -102,7 +102,6 @@ public class ZipSecureFile extends ZipFile {
         MAX_FILE_COUNT = maxFileCount;
     }
 
-
     /**
      * Sets the maximum file size of a single zip entry. It defaults to 4GB,
      * i.e. the 32-bit zip format maximum.
@@ -144,6 +143,7 @@ public class ZipSecureFile extends ZipFile {
      *
      * @param graceEntrySize the grace entry size of a single zip entry
      * @throws IllegalArgumentException for negative graceEntrySize
+     * @since POI 5.2.4
      */
     public static void setGraceEntrySize(long graceEntrySize) {
         if (graceEntrySize < 0) {
@@ -159,6 +159,7 @@ public class ZipSecureFile extends ZipFile {
      * See setGraceEntrySize() for details.
      *
      * @return The current grace entry size
+     * @since POI 5.2.4
      */
     public static long getGraceEntrySize() {
         return GRACE_ENTRY_SIZE;
