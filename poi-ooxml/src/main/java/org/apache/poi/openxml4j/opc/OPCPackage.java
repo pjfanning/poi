@@ -37,7 +37,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -60,7 +59,6 @@ import org.apache.poi.openxml4j.opc.internal.marshallers.ZipPackagePropertiesMar
 import org.apache.poi.openxml4j.opc.internal.unmarshallers.PackagePropertiesUnmarshaller;
 import org.apache.poi.openxml4j.opc.internal.unmarshallers.UnmarshallContext;
 import org.apache.poi.openxml4j.util.ZipEntrySource;
-import org.apache.poi.openxml4j.util.ZipSecureFile;
 import org.apache.poi.util.IOUtils;
 import org.apache.poi.util.NotImplemented;
 import org.apache.poi.util.StringUtil;
@@ -749,10 +747,6 @@ public abstract class OPCPackage implements RelationshipSource, Closeable {
             boolean needCorePropertiesPart = true;
 
             partList = getPartsImpl();
-            if (partList.size() > ZipSecureFile.getMaxFileCount()) {
-                throw new InvalidFormatException(String.format(
-                        Locale.ROOT, ZipSecureFile.MAX_FILE_COUNT_MSG, ZipSecureFile.getMaxFileCount()));
-            }
             for (PackagePart part : new ArrayList<>(partList.sortedValues())) {
                 part.loadRelationships();
 
