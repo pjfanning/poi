@@ -17,11 +17,6 @@
 
 package org.apache.poi.openxml4j.util;
 
-import static org.apache.poi.openxml4j.util.ZipSecureFile.MAX_ENTRY_SIZE;
-import static org.apache.poi.openxml4j.util.ZipSecureFile.MAX_FILE_COUNT;
-import static org.apache.poi.openxml4j.util.ZipSecureFile.MAX_FILE_COUNT_MSG;
-import static org.apache.poi.openxml4j.util.ZipSecureFile.MIN_INFLATE_RATIO;
-
 import java.io.EOFException;
 import java.io.FilterInputStream;
 import java.io.IOException;
@@ -36,10 +31,10 @@ import org.apache.poi.openxml4j.exceptions.NotOfficeXmlFileException;
 import org.apache.poi.util.IOUtils;
 import org.apache.poi.util.Internal;
 
+import static org.apache.poi.openxml4j.util.ZipSecureFile.*;
+
 @Internal
 public class ZipArchiveThresholdInputStream extends FilterInputStream {
-    // don't alert for expanded sizes smaller than 100k
-    private static final long GRACE_ENTRY_SIZE = 100*1024L;
 
     private static final String MAX_ENTRY_SIZE_MSG =
         "Zip bomb detected! The file would exceed the max size of the expanded data in the zip-file.\n" +

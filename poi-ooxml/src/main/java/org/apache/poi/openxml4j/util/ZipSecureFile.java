@@ -38,8 +38,10 @@ public class ZipSecureFile extends ZipFile {
     /* package */ static double MIN_INFLATE_RATIO = 0.01d;
     /* package */ static final long DEFAULT_MAX_ENTRY_SIZE = 0xFFFFFFFFL;
     /* package */ static final long DEFAULT_MAX_FILE_COUNT = 1000;
+    /* package */ static final long DEFAULT_GRACE_ENTRY_SIZE = 100*1024L;
     /* package */ static long MAX_ENTRY_SIZE = DEFAULT_MAX_ENTRY_SIZE;
     /* package */ static long MAX_FILE_COUNT = DEFAULT_MAX_FILE_COUNT;
+    /* package */ static long GRACE_ENTRY_SIZE = DEFAULT_GRACE_ENTRY_SIZE;
 
     // The maximum chars of extracted text
     /* package */ static final long DEFAULT_MAX_TEXT_SIZE = 10*1024*1024L;
@@ -129,6 +131,37 @@ public class ZipSecureFile extends ZipFile {
      */
     public static long getMaxEntrySize() {
         return MAX_ENTRY_SIZE;
+    }
+
+    /**
+     * Sets the grace entry size of a single zip entry. It defaults to 100Kb.
+     *
+     * When decompressed data in a zip entry is smaller than this size, the
+     * Minimum Inflation Ratio check is ignored.
+     *
+     * Setting this to a very small value may lead to more files being flagged
+     * as potential Zip Bombs are rejected as a result.
+     *
+     * @param graceEntrySize the grace entry size of a single zip entry
+     * @throws IllegalArgumentException for negative graceEntrySize
+     */
+    public static void setGraceEntrySize(long graceEntrySize) {
+        if (graceEntrySize < 0) {
+            throw new IllegalArgumentException("Grace entry size must be greater than or equal to zero");
+        }
+        GRACE_ENTRY_SIZE = graceEntrySize;
+    }
+
+    /**
+     * Returns the current threshold for decompressed data in zip entries that are regarded as too small
+     * to worry about from a Zip Bomb perspective (default is 100Kb).
+     *
+     * See setGraceEntrySize() for details.
+     *
+     * @return The current grace entry size
+     */
+    public static long getGraceEntrySize() {
+        return GRACE_ENTRY_SIZE;
     }
 
     /**
