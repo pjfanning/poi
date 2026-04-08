@@ -31,6 +31,7 @@ import java.io.InputStream;
 import org.apache.poi.POIDataSamples;
 import org.apache.poi.extractor.POITextExtractor;
 import org.apache.poi.hwpf.HWPFDocument;
+import org.apache.poi.hwpf.HWPFParser;
 import org.apache.poi.hwpf.HWPFTestDataSamples;
 import org.apache.poi.hwpf.OldWordFileFormatException;
 import org.apache.poi.poifs.filesystem.DirectoryNode;
@@ -419,6 +420,46 @@ public final class TestWordExtractor {
         try (WordExtractor wExt = openExtractor("capitalized.doc")) {
             String text = wExt.getText().trim();
             assertEquals("The following word is: CAPITALIZED.", text);
+        }
+    }
+
+    /**
+     * Test reading a real-world .doc file.
+     * This test now handles non-standard formatting that WPS/Word can open.
+     */
+    @Test
+    void testWpsDocRead() throws Exception {
+        try (
+                InputStream stream = HWPFTestDataSamples.openSampleFileStream("issue_1041.doc");
+                HWPFDocument doc = HWPFParser.parse(stream)
+        ) {
+            WordExtractor extractor = new WordExtractor(doc);
+            String text = extractor.getText();
+            assertNotNull(doc);
+            assertNotNull(text);
+        }
+    }
+
+    @Test
+    void testWpsDocByFs()throws Exception{
+        POIDataSamples instance = POIDataSamples.getDocumentInstance();
+        File file = instance.getFile("issue_1041.doc");
+        POIFSFileSystem fs = new POIFSFileSystem(file);
+        WordExtractor extractor = new WordExtractor(fs);
+        String text = extractor.getText();
+        assertNotNull(text);
+    }
+
+    @Test
+    void testOffice97_2003DocRead() throws Exception {
+        try (
+                InputStream stream = HWPFTestDataSamples.openSampleFileStream("issue_1041_2.doc");
+                HWPFDocument doc = HWPFParser.parse(stream)
+        ) {
+            WordExtractor extractor = new WordExtractor(doc);
+            String text = extractor.getText();
+            assertNotNull(doc);
+            assertNotNull(text);
         }
     }
 

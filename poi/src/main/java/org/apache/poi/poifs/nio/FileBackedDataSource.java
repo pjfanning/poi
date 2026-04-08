@@ -95,7 +95,10 @@ public class FileBackedDataSource extends DataSource implements Closeable {
     @Override
     public ByteBuffer read(int length, long position) throws IOException {
         if (position >= size()) {
-           return ByteBuffer.allocate(length);
+            throw new IndexOutOfBoundsException(
+                    "Unable to read " + length + " bytes from " +
+                            position + " in stream of length " + size()
+            );
         }
 
         // TODO Could we do the read-only case with MapMode.PRIVATE instead?
